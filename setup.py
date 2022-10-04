@@ -1,0 +1,26 @@
+from setuptools import find_packages, setup
+
+requires = [
+    "lxml>=4.9.1",
+    "matplotlib>=3.6.0",
+    "numpy>=1.23.3",
+    "rich>=12.6.0",
+    "scipy>=1.9.1",
+    "Shapely>=1.8.4",
+]
+
+extras = {"dev": ["pytest>=7.1.3"]}
+
+setup(
+    author="dRISK AI",
+    author_email="hugh@drisk.ai",
+    description="Read OpenDRIVE files.",
+    install_requires=requires,
+    extras_require=extras,
+    name="pyxodr",
+    version="0.1",
+    packages=find_packages(
+        where=".",
+        include=["pyxodr", "pyxodr.*"],
+    ),
+)

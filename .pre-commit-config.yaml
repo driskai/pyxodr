@@ -1,0 +1,39 @@
+repos:
+-   repo: https://github.com/psf/black
+    rev: 22.8.0
+    hooks:
+    - id: black
+      language_version: python3.10
+      args: ["--line-length", "88"]
+-   repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+    - id: isort
+      name: isort (python)
+      args: ["--profile", "black", "--line-length", "88"]
+-   repo: https://gitlab.com/pycqa/flake8.git
+    rev: 5.0.4
+    hooks:
+    - id: flake8
+      additional_dependencies:
+        - flake8-black>=0.1.1
+      language_version: python3
+      args: [
+        "--ignore", "E203, W503",
+        "--max-line-length", "88",
+        "--max-complexity", "16",
+        "--select", "B,C,E,F,W,T4,B9",
+        "--per-file-ignores", "__init__.py:F401",
+      ]
+      exclude: examples
+-   repo: https://github.com/pycqa/pydocstyle
+    rev: 6.1.1
+    hooks:
+    - id: pydocstyle
+      args: ["--ignore", "D100,D104,D105,D107,D203,D212,D413"]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    - id: check-ast
+    - id: check-added-large-files
+    - id: check-merge-conflict
