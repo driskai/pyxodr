@@ -6,13 +6,7 @@ import numpy as np
 from lxml import etree
 from shapely.geometry import Polygon
 
-from pyxodr.geometries import (
-    Arc,
-    CubicPolynom,
-    MultiGeom,
-    ParamCubicPolynom,
-    Spiral,
-)
+from pyxodr.geometries import Arc, CubicPolynom, MultiGeom, ParamCubicPolynom, Spiral
 from pyxodr.road_objects.lane import ConnectionPosition, TrafficOrientation
 from pyxodr.road_objects.lane_section import LaneSection
 from pyxodr.utils.array import interpolate_path
