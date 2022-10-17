@@ -26,6 +26,7 @@ def test_plot(
     ax = plt.gca()
     rn.plot(ax, plot_start_and_end=True)
     plt.savefig(os.path.join("tests", "output_plots", f"{road_network_name}.pdf"))
+    plt.close()
 
 
 @pt.mark.parametrize("xodr_path", example_xodr_file_paths)
