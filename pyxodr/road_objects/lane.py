@@ -207,8 +207,11 @@ class Lane:
                 f"{self} seems to use both widths and borders; unsupported."
             )
         elif not lane_uses_widths and not lane_uses_borders:
+            if self.type is None:
+                return self.lane_section_reference_line
             raise NotImplementedError(
-                f"{self} seems to use neither widths nor borders; unsupported."
+                f"{self} seems to use neither widths nor borders; unsupported "
+                + "(for type!=none)."
             )
 
         lane_geometries = []
