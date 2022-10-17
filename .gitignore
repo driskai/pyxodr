@@ -134,3 +134,6 @@ dmypy.json
 
 # Ignore output PDFs
 *.pdf
+
+# Ignore unencrypted OpenDRIVE files
+tests/example_networks/*

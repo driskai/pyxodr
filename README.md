@@ -25,9 +25,20 @@ pip install "pyxodr[dev] @ git+https://github.com/driskai/pyxodr"
 
 Testing is done on the OpenDRIVE example files. I have not included them in this repository as ASAM requires you enter your details to access them, so I assume they don't want them publically distributed through any means other than their own website. You can access them [here](https://www.asam.net/standards/detail/opendrive/).
 
-Once you've downloaded these files, export to your shell environment the `ODR_EXAMPLES` variable:
+Once you've downloaded these files, create an `example_networks` subdirectory under `tests` and place them there.
 ```bash
-export ODR_EXAMPLES=/path/to/your/ASAM_OpenDRIVE_BS_V1-7-0/examples_and_use_cases/
+.
+├── docs
+├── pyxodr
+│   ├── geometries
+│   ├── road_objects
+│   └── utils
+└── tests
+    ├── example_networks
+    │   ├── Ex_Lane-Border
+    │   │   ...
+    │   └── UC_Simple-X-Junction-TrafficLights
+    ├── output_plots
 ```
 and then you should be able to run the (Pytest) tests as normal:
 ```bash
