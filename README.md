@@ -28,6 +28,8 @@ pip install "pyxodr[dev] @ git+https://github.com/driskai/pyxodr"
 
 Testing is done on the OpenDRIVE example files. I have not included them in this repository as ASAM requires you enter your details to access them, so I assume they don't want them publically distributed through any means other than their own website. You can access them [here](https://www.asam.net/standards/detail/opendrive/).
 
+You can also test on the networks for the OpenSCENARIO example files, obtainable [here](https://www.asam.net/standards/detail/openscenario/).
+
 Once you've downloaded these files, create an `example_networks` subdirectory under `tests` and place them there.
 ```bash
 .
