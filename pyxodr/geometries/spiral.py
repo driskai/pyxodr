@@ -70,7 +70,7 @@ class Spiral(Geometry):
         angular_difference = t0
         xy_at_origin = xy - np.array([x0, y0])
         c, s = np.cos(angular_difference), np.sin(angular_difference)
-        rm = np.matrix([[c, s], [-s, c]])
+        rm = np.array([[c, s], [-s, c]])
         # Apply rotation matrix:
         rotated_xy_at_origin = np.array(np.dot(rm, xy_at_origin.T).T)
 
