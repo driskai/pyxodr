@@ -1,4 +1,7 @@
 # pyxodr
+
+![Tests](https://github.com/driskai/pyxodr/actions/workflows/tests.yml/badge.svg)
+
 Read OpenDRIVE files into a class structure that represents road objects as arrays of `(x,y,z)` coordinates rather than parameterised functions.
 
 This class structure implements an API which should act as a middle layer between OpenDRIVE files and other applications, used to create road networks from their coordinates.
