@@ -2,10 +2,10 @@ from setuptools import find_packages, setup
 
 requires = [
     "lxml>=4.9.1",
-    "matplotlib>=3.6.0",
-    "numpy>=1.23.3",
+    "matplotlib>=3.5.0",
+    "numpy>=1.21.0",
     "rich>=12.6.0",
-    "scipy>=1.9.1",
+    "scipy>=1.7.0",
     "Shapely>=1.8.4",
 ]
 
