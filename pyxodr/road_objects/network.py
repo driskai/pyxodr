@@ -1,4 +1,4 @@
-import functools
+from functools import lru_cache
 from typing import List, Set
 
 import matplotlib.pyplot as plt
@@ -9,6 +9,7 @@ from rich.progress import track
 from pyxodr.road_objects.junction import Junction
 from pyxodr.road_objects.lane import ConnectionPosition
 from pyxodr.road_objects.road import Road
+from pyxodr.utils import cached_property
 
 
 class RoadNetwork:
@@ -36,7 +37,7 @@ class RoadNetwork:
 
         self.road_ids_to_object = {}
 
-    @functools.lru_cache(maxsize=None)
+    @lru_cache(maxsize=None)
     def get_junctions(self) -> List[Junction]:
         """Return the Junction objects for all junctions in this road network."""
         junctions = []
@@ -48,7 +49,7 @@ class RoadNetwork:
             )
         return junctions
 
-    @functools.cached_property
+    @cached_property
     def connecting_road_ids(self) -> Set[int]:
         """Return the IDs of all connecting roads in all junctions in this network."""
         _connecting_road_ids = set()
@@ -113,7 +114,7 @@ class RoadNetwork:
 
             road._link_lane_sections()
 
-    @functools.lru_cache(maxsize=None)
+    @lru_cache(maxsize=None)
     def get_roads(self, include_connecting_roads: bool = True) -> List[Road]:
         """Return the Road objects for all roads in this network."""
         if not include_connecting_roads:

@@ -1,10 +1,10 @@
-import functools
 from typing import Dict, List, Set
 
 import numpy as np
 from lxml import etree
 
 from pyxodr.road_objects.road import Road
+from pyxodr.utils import cached_property
 
 
 class Junction:
@@ -23,7 +23,7 @@ class Junction:
     ):
         self.junction_xml = junction_xml
 
-    @functools.cached_property
+    @cached_property
     def _connection_attributes_list(self) -> List[dict]:
         __connection_attributes = []
         for connection_xml in self.junction_xml.findall("connection"):

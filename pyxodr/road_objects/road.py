@@ -1,4 +1,3 @@
-import functools
 from typing import Dict, List, Optional, Set, Tuple
 
 import matplotlib.pyplot as plt
@@ -9,6 +8,7 @@ from shapely.geometry import Polygon
 from pyxodr.geometries import Arc, CubicPolynom, MultiGeom, ParamCubicPolynom, Spiral
 from pyxodr.road_objects.lane import ConnectionPosition, TrafficOrientation
 from pyxodr.road_objects.lane_section import LaneSection
+from pyxodr.utils import cached_property
 from pyxodr.utils.array import interpolate_path
 
 
@@ -39,7 +39,7 @@ class Road:
         self.successor_data: Tuple[Road, Optional[ConnectionPosition]] = (None, None)
         self.predecessor_data: Tuple[Road, Optional[ConnectionPosition]] = (None, None)
 
-    @functools.cached_property
+    @cached_property
     def traffic_orientation(self) -> TrafficOrientation:
         """
         Get the traffic orientation (right/left-hand-drive) for this road.
@@ -80,7 +80,7 @@ class Road:
     def __hash__(self):
         return hash(self.id)
 
-    @functools.cached_property
+    @cached_property
     def reference_line(self) -> np.ndarray:
         """
         Generate the road reference line according to the OpenDRIVE standard (7.1).
@@ -231,7 +231,7 @@ class Road:
 
         return stacked_coordinates
 
-    @functools.cached_property
+    @cached_property
     def lane_offset_line(self) -> np.ndarray:
         """
         Generate the lane offset line according to the OpenDRIVE standard (9.3).
@@ -277,7 +277,7 @@ class Road:
             )
         return lane_offset_coordinates
 
-    @functools.cached_property
+    @cached_property
     def z_coordinates(self) -> np.ndarray:
         """
         Generate the z coordinates of the reference line.
@@ -450,7 +450,7 @@ class Road:
             )
         return lane_section_tuples
 
-    @functools.cached_property
+    @cached_property
     def lane_sections(self) -> List[LaneSection]:
         """
         Return an ordered (along the reference line) list of lane sections.
@@ -485,7 +485,7 @@ class Road:
 
         return lane_sections
 
-    @functools.cached_property
+    @cached_property
     def successor_ids(self) -> Set[int]:
         """Get the OpenDRIVE IDs of the successor roads to this road."""
         _successor_ids = set()
@@ -493,7 +493,7 @@ class Road:
             _successor_ids.add(int(successor_xml.attrib["elementId"]))
         return _successor_ids
 
-    @functools.cached_property
+    @cached_property
     def predecessor_ids(self) -> Set[int]:
         """Get the OpenDRIVE IDs of the predecessor roads to this road."""
         _predecessor_ids = set()
@@ -501,7 +501,7 @@ class Road:
             _predecessor_ids.add(int(predecessor_xml.attrib["elementId"]))
         return _predecessor_ids
 
-    @functools.cached_property
+    @cached_property
     def boundary(self) -> Polygon:
         """Return the bounding polygon of this road."""
         left_borders = self.lane_borders["left"]
@@ -516,7 +516,7 @@ class Road:
 
         return bounding_poly
 
-    @functools.cached_property
+    @cached_property
     def junction_connecting_ids(self) -> Dict[str, Set[int]]:
         """Return the IDs of all junctions that connect to this road."""
         predecessor_junction_ids = [

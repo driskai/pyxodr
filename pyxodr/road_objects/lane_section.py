@@ -1,4 +1,3 @@
-import functools
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -11,6 +10,7 @@ from pyxodr.road_objects.lane import (
     LaneOrientation,
     TrafficOrientation,
 )
+from pyxodr.utils import cached_property
 
 
 class LaneSection:
@@ -114,7 +114,7 @@ class LaneSection:
             )
         return offset_line
 
-    @functools.cached_property
+    @cached_property
     def left_lanes(self) -> List[Lane]:
         """
         Return a list of lane objects on the left of the lane offset line.
@@ -128,7 +128,7 @@ class LaneSection:
         """
         return self.__get_lanes_by_orientation(LaneOrientation.LEFT)
 
-    @functools.cached_property
+    @cached_property
     def right_lanes(self) -> List[Lane]:
         """
         Return a list of lane objects on the right of the lane offset line.
@@ -147,7 +147,7 @@ class LaneSection:
         """Get all lanes."""
         return self.left_lanes + self.right_lanes
 
-    @functools.cached_property
+    @cached_property
     def _id_to_lane(self) -> Dict[int, Lane]:
         return {lane.id: lane for lane in self.lanes}
 
@@ -163,7 +163,7 @@ class LaneSection:
             )
         return lane_obj
 
-    @functools.cached_property
+    @cached_property
     def boundary(self) -> Polygon:
         """Return the bounding polygon of this lane section."""
         if self.left_lanes == []:

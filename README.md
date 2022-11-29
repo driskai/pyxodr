@@ -1,6 +1,7 @@
 # pyxodr
 
 ![Tests](https://github.com/driskai/pyxodr/actions/workflows/tests.yml/badge.svg)
+![Python 3.7+](https://img.shields.io/badge/python-3.7+-brightgreen)
 
 Read OpenDRIVE files into a class structure that represents road objects as arrays of `(x,y,z)` coordinates rather than parameterised functions.
 

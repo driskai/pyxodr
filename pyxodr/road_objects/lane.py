@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from enum import Enum
 from typing import List, Set, Tuple
 
@@ -9,6 +8,7 @@ import numpy as np
 from lxml import etree
 
 from pyxodr.geometries import CubicPolynom, MultiGeom
+from pyxodr.utils import cached_property
 
 
 class LaneOrientation(Enum):
@@ -176,7 +176,7 @@ class Lane:
             for predecessor_xml in link_xml.findall("predecessor")
         ]
 
-    @functools.cached_property
+    @cached_property
     def type(self) -> str:
         """Get the OpenDRIVE type of this lane."""
         lane_type = self.lane_xml.attrib["type"]
@@ -184,7 +184,7 @@ class Lane:
             lane_type = None
         return lane_type
 
-    @functools.cached_property
+    @cached_property
     def boundary_line(self) -> np.ndarray:
         """
         Return the boundary line of this lane.
@@ -243,7 +243,7 @@ class Lane:
 
         return global_lane_coords
 
-    @functools.cached_property
+    @cached_property
     def centre_line(self) -> np.ndarray:
         """
         Return the centre line of this lane.
