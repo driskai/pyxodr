@@ -18,7 +18,7 @@ setup(
     install_requires=requires,
     extras_require=extras,
     name="pyxodr",
-    version="0.1",
+    version="0.1.0",
     packages=find_packages(
         where=".",
         include=["pyxodr", "pyxodr.*"],
