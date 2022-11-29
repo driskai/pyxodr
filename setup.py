@@ -12,7 +12,7 @@ requires = [
 extras = {"dev": ["pytest>=7.1.3"]}
 
 setup(
-    author="dRISK AI",
+    author="Hugh Blayney",
     author_email="hugh@drisk.ai",
     description="Read OpenDRIVE files.",
     install_requires=requires,
