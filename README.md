@@ -18,11 +18,7 @@ This class structure implements an API which should act as a middle layer betwee
 ## Installation
 Install with `pip`:
 ```bash
-pip install git+https://github.com/driskai/pyxodr
-```
-To install extra requirements for developing:
-```bash
-pip install "pyxodr[dev] @ git+https://github.com/driskai/pyxodr"
+pip install pyxodr
 ```
 
 ## Testing
