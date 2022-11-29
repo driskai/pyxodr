@@ -1,16 +1,15 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools-git-versioning"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.1.3"]
 
-[tool.setuptools.packages.find]
-include = ["pyxodr", "pyxodr.*"]
+[tool.setuptools-git-versioning]
+enabled = true
 
 [project]
 name = "pyxodr"
-version = "0.1.0"
 authors = [
     { name="Hugh Blayney", email="hugh@drisk.ai" },
 ]
@@ -30,6 +29,10 @@ dependencies = [
     "scipy>=1.7.0",
     "Shapely>=1.8.4",
 ]
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ["pyxodr", "pyxodr.*"]
 
 [project.urls]
 "Homepage" = "https://github.com/driskai/pyxodr"
