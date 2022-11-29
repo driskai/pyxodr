@@ -8,11 +8,11 @@ Read OpenDRIVE files into a class structure that represents road objects as arra
 This class structure implements an API which should act as a middle layer between OpenDRIVE files and other applications, used to create road networks from their coordinates.
 
 <p align="center">
-<img src="docs/source/Ex_LHT-Complex-X-Junction_old_spec.png" width="30%" />
+<img src="https://raw.githubusercontent.com/driskai/pyxodr/main/docs/source/Ex_LHT-Complex-X-Junction_old_spec.png" width="30%" />
 &nbsp; &nbsp; &nbsp; &nbsp;
-<img src="docs/source/UC_2Lane-RoundAbout-3Arms.png" width="30%" />
+<img src="https://raw.githubusercontent.com/driskai/pyxodr/main/docs/source/UC_2Lane-RoundAbout-3Arms.png" width="30%" />
 &nbsp; &nbsp; &nbsp; &nbsp;
-<img src="docs/source/UC_Motorway-Exit-Entry-DirectJunction.png" width="30%" />
+<img src="https://raw.githubusercontent.com/driskai/pyxodr/main/docs/source/UC_Motorway-Exit-Entry-DirectJunction.png" width="30%" />
 </p>
 
 ## Installation
