@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, List
 
 import pytest as pt
 from rich.progress import track
@@ -25,7 +25,7 @@ if not os.path.isdir(open_drive_example_directory):
 #       is not supported (and noted in the TODO in the README.)
 filenames_to_remove = {"Ex_LHT-Complex-X-Junction", "UC_ParamPoly3"}
 
-example_xodr_file_paths: list[str] = []
+example_xodr_file_paths: List[str] = []
 for subdir, dirs, files in os.walk(open_drive_example_directory):
     for file in files:
         filename, file_extension = os.path.splitext(file)
