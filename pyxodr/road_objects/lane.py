@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Set, Tuple
+from typing import List, Literal, Set, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -157,24 +157,34 @@ class Lane:
     @property
     def successor_ids(self) -> List[int]:
         """Get the OpenDRIVE IDs of the successor lanes to this lane."""
-        link_xml = self.lane_xml.find("link")
-        if link_xml is None:
-            return []
-        return [
-            int(successor_xml.attrib["id"])
-            for successor_xml in link_xml.findall("successor")
-        ]
+        return self._get_connecting_ids("successor")
 
     @property
     def predecessor_ids(self) -> List[int]:
         """Get the OpenDRIVE IDs of the predecessor lanes to this lane."""
+        return self._get_connecting_ids("predecessor")
+
+    def _get_connecting_ids(self, connecting_key: Literal["successor", "predecessor"]):
         link_xml = self.lane_xml.find("link")
         if link_xml is None:
             return []
-        return [
-            int(predecessor_xml.attrib["id"])
-            for predecessor_xml in link_xml.findall("predecessor")
-        ]
+        # Note connections to and from lane ID 0 should not be allowed, therefore we
+        # will ignore them; the OpenDRIVE spec states
+        # "Lane predecessors and successors shall only be used to connect lanes if a
+        # physical connection at the beginning or end of both lanes exist. Both lanes
+        # have a non-zero width at the connection point and they are semantically
+        # connected."
+        # And also states that "The center lane has no width and serves as reference
+        # for lane numbering. The center lane itself has the lane id 0."
+        # If I'm wrong about this, please raise an issue.
+        if self.id == 0:
+            return []
+        connecting_ids = []
+        for connecting_xml in link_xml.findall(connecting_key):
+            int_id = int(connecting_xml.attrib["id"])
+            if int_id != 0:
+                connecting_ids.append(int_id)
+        return connecting_ids
 
     @cached_property
     def type(self) -> str:
