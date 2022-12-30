@@ -329,7 +329,7 @@ class Road:
     @property
     def id(self):
         """Get the OpenDRIVE ID of this road."""
-        return int(self["id"])
+        return self["id"]
 
     def _link_lane_sections(self):
         """
@@ -486,19 +486,19 @@ class Road:
         return lane_sections
 
     @cached_property
-    def successor_ids(self) -> Set[int]:
+    def successor_ids(self) -> Set[str]:
         """Get the OpenDRIVE IDs of the successor roads to this road."""
         _successor_ids = set()
         for successor_xml in self.road_xml.find("link").findall("successor"):
-            _successor_ids.add(int(successor_xml.attrib["elementId"]))
+            _successor_ids.add(successor_xml.attrib["elementId"])
         return _successor_ids
 
     @cached_property
-    def predecessor_ids(self) -> Set[int]:
+    def predecessor_ids(self) -> Set[str]:
         """Get the OpenDRIVE IDs of the predecessor roads to this road."""
         _predecessor_ids = set()
         for predecessor_xml in self.road_xml.find("link").findall("predecessor"):
-            _predecessor_ids.add(int(predecessor_xml.attrib["elementId"]))
+            _predecessor_ids.add(predecessor_xml.attrib["elementId"])
         return _predecessor_ids
 
     @cached_property
@@ -520,12 +520,12 @@ class Road:
     def junction_connecting_ids(self) -> Dict[str, Set[int]]:
         """Return the IDs of all junctions that connect to this road."""
         predecessor_junction_ids = [
-            int(predecessor_xml.attrib["elementId"])
+            predecessor_xml.attrib["elementId"]
             for predecessor_xml in self.road_xml.find("link").findall("predecessor")
             if predecessor_xml.attrib["elementType"] == "junction"
         ]
         successor_junction_ids = [
-            int(successor_xml.attrib["elementId"])
+            successor_xml.attrib["elementId"]
             for successor_xml in self.road_xml.find("link").findall("successor")
             if successor_xml.attrib["elementType"] == "junction"
         ]
