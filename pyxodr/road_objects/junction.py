@@ -30,7 +30,7 @@ class Junction:
             __connection_attributes.append(connection_xml.attrib)
         return __connection_attributes
 
-    def get_connecting_road_ids(self) -> Set[int]:
+    def get_connecting_road_ids(self) -> Set[str]:
         """
         Return a set of ids of the connecting roads in this junction.
 
@@ -38,20 +38,20 @@ class Junction:
 
         Returns
         -------
-        Set[int]
-            Set of int road ids making up the connecting roads in this junction.
+        Set[str]
+            Set of str road ids making up the connecting roads in this junction.
         """
         _connecting_road_ids = set()
         for connection_attributes in self._connection_attributes_list:
             try:
-                connecting_road_id = int(connection_attributes["connectingRoad"])
+                connecting_road_id = connection_attributes["connectingRoad"]
                 _connecting_road_ids.add(connecting_road_id)
             except KeyError:
                 pass
 
         return _connecting_road_ids
 
-    def get_linked_road_ids(self) -> Set[int]:
+    def get_linked_road_ids(self) -> Set[str]:
         """
         Return a set of ids of the linked roads in this (direct) junction.
 
@@ -59,20 +59,20 @@ class Junction:
 
         Returns
         -------
-        Set[int]
-            Set of int road ids making up the linked roads in this junction.
+        Set[str]
+            Set of str road ids making up the linked roads in this junction.
         """
         _linked_road_ids = set()
         for connection_attributes in self._connection_attributes_list:
             try:
-                linked_road_id = int(connection_attributes["linkedRoad"])
+                linked_road_id = connection_attributes["linkedRoad"]
                 _linked_road_ids.add(linked_road_id)
             except KeyError:
                 pass
 
         return _linked_road_ids
 
-    def get_incoming_road_ids(self) -> Set[int]:
+    def get_incoming_road_ids(self) -> Set[str]:
         """
         Return a set of ids of the incoming roads to this junction.
 
@@ -80,18 +80,18 @@ class Junction:
 
         Returns
         -------
-        Set[int]
-            Set of int road ids making up the incoming roads to this junction.
+        Set[str]
+            Set of str road ids making up the incoming roads to this junction.
         """
         _incoming_road_ids = set()
         for connection_attributes in self._connection_attributes_list:
-            connecting_road_id = int(connection_attributes["incomingRoad"])
+            connecting_road_id = connection_attributes["incomingRoad"]
             _incoming_road_ids.add(connecting_road_id)
         return _incoming_road_ids
 
     def get_outgoing_road_ids(
-        self, road_ids_to_objects: Dict[int, Road], fail_on_key_error: bool = True
-    ) -> Set[int]:
+        self, road_ids_to_objects: Dict[str, Road], fail_on_key_error: bool = True
+    ) -> Set[str]:
         """
         Return a set of ids of the outgoing roads from this junction.
 
@@ -101,7 +101,7 @@ class Junction:
 
         Parameters
         ----------
-        road_ids_to_objects : Dict[int, Road]
+        road_ids_to_objects : Dict[str, Road]
             Dictionary linking road ids to Road objects.
         fail_on_key_error : bool, optional
             If True, connecting road ids from this junction not present in the
@@ -109,8 +109,8 @@ class Junction:
 
         Returns
         -------
-        Set[int]
-            A set of int roads ids making up the outgoing roads from this junction.
+        Set[str]
+            A set of str roads ids making up the outgoing roads from this junction.
 
         Raises
         ------
@@ -141,7 +141,7 @@ class Junction:
     @property
     def id(self):
         """Get the OpenDRIVE ID of this junction."""
-        return int(self["id"])
+        return self["id"]
 
     def closest_point_on_road(self, road_obj: Road) -> np.ndarray:
         """

@@ -99,14 +99,14 @@ class RoadNetwork:
 
             if pred_dict is not None and pred_dict["elementType"] == "road":
                 road.predecessor_data = (
-                    self.road_ids_to_object[int(pred_dict["elementId"])],
+                    self.road_ids_to_object[pred_dict["elementId"]],
                     ConnectionPosition.from_contact_point_str(
                         pred_dict["contactPoint"]
                     ),
                 )
             if succ_dict is not None and succ_dict["elementType"] == "road":
                 road.successor_data = (
-                    self.road_ids_to_object[int(succ_dict["elementId"])],
+                    self.road_ids_to_object[succ_dict["elementId"]],
                     ConnectionPosition.from_contact_point_str(
                         succ_dict["contactPoint"]
                     ),
