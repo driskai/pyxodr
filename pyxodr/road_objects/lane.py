@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Literal, Set, Tuple
+from typing import List, Set, Tuple
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
