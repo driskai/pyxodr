@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from lxml import etree
@@ -52,6 +52,7 @@ class LaneSection:
         lane_section_reference_line: np.ndarray,
         lane_section_z: np.ndarray,
         traffic_orientation: TrafficOrientation,
+        ignored_lane_types: Optional[set[str]] = None,
     ):
         self.road_id = road_id
         self.lane_section_ordinal = lane_section_ordinal
@@ -60,6 +61,10 @@ class LaneSection:
         self.lane_section_reference_line = lane_section_reference_line
         self.lane_section_z = lane_section_z
         self.traffic_orientation = traffic_orientation
+
+        self.ignored_lane_types = (
+            set([]) if ignored_lane_types is None else ignored_lane_types
+        )
 
         self.successor_data: Tuple[LaneSection, ConnectionPosition] = (None, None)
         self.predecessor_data: Tuple[LaneSection, ConnectionPosition] = (None, None)
@@ -145,7 +150,8 @@ class LaneSection:
     @property
     def lanes(self) -> List[Lane]:
         """Get all lanes."""
-        return self.left_lanes + self.right_lanes
+        lanes = self.left_lanes + self.right_lanes
+        return [lane for lane in lanes if not lane.type in self.ignored_lane_types]
 
     @cached_property
     def _id_to_lane(self) -> Dict[int, Lane]:

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Set
+from typing import List, Optional, Set
 
 import matplotlib.pyplot as plt
 from lxml import etree
@@ -29,11 +29,16 @@ class RoadNetwork:
         self,
         xodr_file_path: str,
         resolution: float = 0.1,
+        ignored_lane_types: Optional[set[str]] = None,
     ):
         self.tree = etree.parse(xodr_file_path)
         self.root = self.tree.getroot()
 
         self.resolution = resolution
+
+        self.ignored_lane_types = (
+            set([]) if ignored_lane_types is None else ignored_lane_types
+        )
 
         self.road_ids_to_object = {}
 
@@ -129,7 +134,11 @@ class RoadNetwork:
             if road_id in self.road_ids_to_object.keys():
                 roads.append(self.road_ids_to_object[road_id])
             else:
-                road = Road(road_xml, resolution=self.resolution)
+                road = Road(
+                    road_xml,
+                    resolution=self.resolution,
+                    ignored_lane_types=self.ignored_lane_types,
+                )
                 self.road_ids_to_object[road.id] = road
                 roads.append(road)
 

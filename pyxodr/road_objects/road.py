@@ -29,9 +29,14 @@ class Road:
         self,
         road_xml: etree._Element,
         resolution: float = 0.1,
+        ignored_lane_types: Optional[set[str]] = None,
     ):
         self.road_xml = road_xml
         self.resolution = resolution
+
+        self.ignored_lane_types = (
+            set([]) if ignored_lane_types is None else ignored_lane_types
+        )
 
         # We'll store both successor and predecessor data as sometimes one of these
         # (maybe just successor?) will point to a junction rather than a road, so we
@@ -480,6 +485,7 @@ class Road:
                     lane_sub_reference_line,
                     lane_z_coordinates,
                     self.traffic_orientation,
+                    ignored_lane_types=self.ignored_lane_types,
                 )
             )
 
