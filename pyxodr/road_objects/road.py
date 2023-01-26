@@ -29,7 +29,7 @@ class Road:
         self,
         road_xml: etree._Element,
         resolution: float = 0.1,
-        ignored_lane_types: Optional[set[str]] = None,
+        ignored_lane_types: Optional[Set[str]] = None,
     ):
         self.road_xml = road_xml
         self.resolution = resolution

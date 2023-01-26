@@ -29,7 +29,7 @@ class RoadNetwork:
         self,
         xodr_file_path: str,
         resolution: float = 0.1,
-        ignored_lane_types: Optional[set[str]] = None,
+        ignored_lane_types: Optional[Set[str]] = None,
     ):
         self.tree = etree.parse(xodr_file_path)
         self.root = self.tree.getroot()

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from lxml import etree
@@ -52,7 +52,7 @@ class LaneSection:
         lane_section_reference_line: np.ndarray,
         lane_section_z: np.ndarray,
         traffic_orientation: TrafficOrientation,
-        ignored_lane_types: Optional[set[str]] = None,
+        ignored_lane_types: Optional[Set[str]] = None,
     ):
         self.road_id = road_id
         self.lane_section_ordinal = lane_section_ordinal
