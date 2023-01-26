@@ -333,12 +333,14 @@ class Lane:
             if lane._traffic_flows_in_opposite_direction_to_centre_line:
                 if connection_position is not ConnectionPosition.END:
                     raise ValueError(
-                        f"Expected to connect to the end of {lane}, "
+                        f"Expected {self} to connect to the end of {lane}, "
                         + "after flipping it according to traffic flow direction."
                     )
             else:
                 if connection_position is not ConnectionPosition.BEGINNING:
-                    raise ValueError(f"Expected to connect to the start of {lane}.")
+                    raise ValueError(
+                        f"Expected {self} to connect to the start of {lane}."
+                    )
 
             successor_lanes.add(lane)
 
