@@ -151,7 +151,7 @@ class LaneSection:
     def lanes(self) -> List[Lane]:
         """Get all lanes."""
         lanes = self.left_lanes + self.right_lanes
-        return [lane for lane in lanes if not lane.type in self.ignored_lane_types]
+        return [lane for lane in lanes if lane.type not in self.ignored_lane_types]
 
     @cached_property
     def _id_to_lane(self) -> Dict[int, Lane]:
