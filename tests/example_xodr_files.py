@@ -1,10 +1,5 @@
 import os
-from typing import Dict, List
-
-import pytest as pt
-from rich.progress import track
-
-from pyxodr.road_objects.network import RoadNetwork
+from typing import List
 
 open_drive_example_directory = os.path.join("tests", "example_networks")
 
@@ -32,16 +27,3 @@ for subdir, dirs, files in os.walk(open_drive_example_directory):
         if file_extension == ".xodr" and filename not in filenames_to_remove:
             absolute_filepath = os.path.abspath(os.path.join(subdir, file))
             example_xodr_file_paths.append(absolute_filepath)
-
-
-@pt.fixture(scope="module")
-def loaded_road_networks() -> Dict[str, RoadNetwork]:
-    """Load in all of the path strings to RoadNetwork objects."""
-    print("Load in example road network files to road network objects.")
-    road_network_to_loaded_network = {
-        example_xodr_file_path: RoadNetwork(example_xodr_file_path)
-        for example_xodr_file_path in track(
-            example_xodr_file_paths, total=len(example_xodr_file_paths)
-        )
-    }
-    return road_network_to_loaded_network
