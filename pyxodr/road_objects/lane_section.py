@@ -38,9 +38,13 @@ class LaneSection:
         z coordinates of the reference line of this lane section. This will be the z
         coordinates of a sub-section of the road reference line (OpenDRIVE spec 7.1)
         that just covers this lane section, rather than the whole road.
-    traffic_orientation: TrafficOrientation
+    traffic_orientation : TrafficOrientation
         The traffic orientation (right/left-hand-drive) for this lane section. See
         OpenDRIVE Spec Section 8.
+    ignored_lane_types : Set[str], optional
+        A set of lane types that should not be read from the OpenDRIVE file. If
+        unspecified, no types are ignored.
+
     """
 
     def __init__(

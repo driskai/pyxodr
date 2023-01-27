@@ -24,6 +24,9 @@ class Road:
     resolution : float, optional
         Spatial resolution (in m) with which to create the road (and associated road
         object) coordinates, by default 0.1
+    ignored_lane_types : Set[str], optional
+        A set of lane types that should not be read from the OpenDRIVE file. If
+        unspecified, no types are ignored.
     """
 
     def __init__(
