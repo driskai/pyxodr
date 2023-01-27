@@ -72,7 +72,9 @@ class LaneSection:
     def __hash__(self):
         return hash((self.road_id, self.lane_section_ordinal))
 
-    def __get_lanes_by_orientation(self, orientation: LaneOrientation) -> List[Lane]:
+    def __get_lanes_by_orientation(
+        self, orientation: LaneOrientation, ignored_lanes: bool = False
+    ) -> List[Lane]:
         str_orientation = "left" if orientation is LaneOrientation.LEFT else "right"
         lane_xmls = sorted(
             self.lane_section_xml.findall(f"{str_orientation}/lane"),
@@ -92,7 +94,12 @@ class LaneSection:
                 self.lane_section_z,
                 inner_lane=inner_lane,
             )
-            lanes.append(lane_obj)
+            if ignored_lanes:
+                if lane_obj.type in self.ignored_lane_types:
+                    lanes.append(lane_obj)
+            else:
+                if lane_obj.type not in self.ignored_lane_types:
+                    lanes.append(lane_obj)
             inner_lane = lane_obj
 
         return lanes
@@ -151,7 +158,23 @@ class LaneSection:
     def lanes(self) -> List[Lane]:
         """Get all lanes."""
         lanes = self.left_lanes + self.right_lanes
-        return [lane for lane in lanes if lane.type not in self.ignored_lane_types]
+        return lanes
+
+    @property
+    def ignored_lane_ids(self) -> Set[int]:
+        """Get IDs of lanes with types in self.ignored_lane_types."""
+        ignored_lane_ids = set(
+            [
+                lane.id
+                for lane in self.__get_lanes_by_orientation(
+                    LaneOrientation.LEFT, ignored_lanes=True
+                )
+                + self.__get_lanes_by_orientation(
+                    LaneOrientation.RIGHT, ignored_lanes=True
+                )
+            ]
+        )
+        return ignored_lane_ids
 
     @cached_property
     def _id_to_lane(self) -> Dict[int, Lane]:
