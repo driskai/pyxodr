@@ -72,6 +72,9 @@ class LaneSection:
     def __hash__(self):
         return hash((self.road_id, self.lane_section_ordinal))
 
+    def __repr__(self):
+        return f"Section_{self.lane_section_ordinal}/Road_{self.road_id}"
+
     def __get_lanes_by_orientation(
         self, orientation: LaneOrientation, ignored_lanes: bool = False
     ) -> List[Lane]:
