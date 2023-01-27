@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from lxml import etree
@@ -38,9 +38,13 @@ class LaneSection:
         z coordinates of the reference line of this lane section. This will be the z
         coordinates of a sub-section of the road reference line (OpenDRIVE spec 7.1)
         that just covers this lane section, rather than the whole road.
-    traffic_orientation: TrafficOrientation
+    traffic_orientation : TrafficOrientation
         The traffic orientation (right/left-hand-drive) for this lane section. See
         OpenDRIVE Spec Section 8.
+    ignored_lane_types : Set[str], optional
+        A set of lane types that should not be read from the OpenDRIVE file. If
+        unspecified, no types are ignored.
+
     """
 
     def __init__(
@@ -52,6 +56,7 @@ class LaneSection:
         lane_section_reference_line: np.ndarray,
         lane_section_z: np.ndarray,
         traffic_orientation: TrafficOrientation,
+        ignored_lane_types: Optional[Set[str]] = None,
     ):
         self.road_id = road_id
         self.lane_section_ordinal = lane_section_ordinal
@@ -61,13 +66,22 @@ class LaneSection:
         self.lane_section_z = lane_section_z
         self.traffic_orientation = traffic_orientation
 
+        self.ignored_lane_types = (
+            set([]) if ignored_lane_types is None else ignored_lane_types
+        )
+
         self.successor_data: Tuple[LaneSection, ConnectionPosition] = (None, None)
         self.predecessor_data: Tuple[LaneSection, ConnectionPosition] = (None, None)
 
     def __hash__(self):
         return hash((self.road_id, self.lane_section_ordinal))
 
-    def __get_lanes_by_orientation(self, orientation: LaneOrientation) -> List[Lane]:
+    def __repr__(self):
+        return f"Section_{self.lane_section_ordinal}/Road_{self.road_id}"
+
+    def __get_lanes_by_orientation(
+        self, orientation: LaneOrientation, ignored_lanes: bool = False
+    ) -> List[Lane]:
         str_orientation = "left" if orientation is LaneOrientation.LEFT else "right"
         lane_xmls = sorted(
             self.lane_section_xml.findall(f"{str_orientation}/lane"),
@@ -87,7 +101,12 @@ class LaneSection:
                 self.lane_section_z,
                 inner_lane=inner_lane,
             )
-            lanes.append(lane_obj)
+            if ignored_lanes:
+                if lane_obj.type in self.ignored_lane_types:
+                    lanes.append(lane_obj)
+            else:
+                if lane_obj.type not in self.ignored_lane_types:
+                    lanes.append(lane_obj)
             inner_lane = lane_obj
 
         return lanes
@@ -145,7 +164,24 @@ class LaneSection:
     @property
     def lanes(self) -> List[Lane]:
         """Get all lanes."""
-        return self.left_lanes + self.right_lanes
+        lanes = self.left_lanes + self.right_lanes
+        return lanes
+
+    @property
+    def ignored_lane_ids(self) -> Set[int]:
+        """Get IDs of lanes with types in self.ignored_lane_types."""
+        ignored_lane_ids = set(
+            [
+                lane.id
+                for lane in self.__get_lanes_by_orientation(
+                    LaneOrientation.LEFT, ignored_lanes=True
+                )
+                + self.__get_lanes_by_orientation(
+                    LaneOrientation.RIGHT, ignored_lanes=True
+                )
+            ]
+        )
+        return ignored_lane_ids
 
     @cached_property
     def _id_to_lane(self) -> Dict[int, Lane]:
@@ -204,6 +240,8 @@ class LaneSection:
                             predecessor_lane_section.get_lane_from_id(predecessor_id)
                         )
                     except KeyError as e:
+                        if predecessor_id in predecessor_lane_section.ignored_lane_ids:
+                            continue
                         raise KeyError(
                             f"Raised by lane {lane.id}, lane section "
                             + f"{self.lane_section_ordinal} in "
@@ -234,6 +272,8 @@ class LaneSection:
                             successor_id
                         )
                     except KeyError as e:
+                        if successor_id in successor_lane_section.ignored_lane_ids:
+                            continue
                         raise KeyError(
                             f"Raised by lane {lane.id}, lane section "
                             + f"{self.lane_section_ordinal} in "

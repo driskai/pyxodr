@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 try:
     from typing import Literal
@@ -13,7 +13,7 @@ import numpy as np
 from lxml import etree
 
 from pyxodr.geometries import CubicPolynom, MultiGeom
-from pyxodr.utils import cached_property
+from pyxodr.utils import CurvedText, cached_property
 
 
 class LaneOrientation(Enum):
@@ -333,12 +333,14 @@ class Lane:
             if lane._traffic_flows_in_opposite_direction_to_centre_line:
                 if connection_position is not ConnectionPosition.END:
                     raise ValueError(
-                        f"Expected to connect to the end of {lane}, "
+                        f"Expected {self} to connect to the end of {lane}, "
                         + "after flipping it according to traffic flow direction."
                     )
             else:
                 if connection_position is not ConnectionPosition.BEGINNING:
-                    raise ValueError(f"Expected to connect to the start of {lane}.")
+                    raise ValueError(
+                        f"Expected {self} to connect to the start of {lane}."
+                    )
 
             successor_lanes.add(lane)
 
@@ -349,6 +351,7 @@ class Lane:
         axis: plt.Axes,
         plot_start_and_end: bool = False,
         line_scale_factor: float = 1.0,
+        label_size: Optional[int] = None,
     ) -> plt.Axes:
         """
         Plot a visualisation of lane on a provided axis object.
@@ -362,6 +365,10 @@ class Lane:
             end with pink cross), by default False
         line_scale_factor : float, optional
             Scale all lines thicknesses up by this factor, by default 1.0.
+        label_size : int, optional
+            If specified, text of this font size will be displayed along the lane centre
+            line of the form "l_n_s_m" where n is the ID of this lane, m is the id of
+            the lane section. By default None, resulting in no labels.
 
         Returns
         -------
@@ -376,6 +383,16 @@ class Lane:
             color="grey",
             alpha=0.8,
         )
+        if label_size is not None:
+            x, y = lane_traffic_flow_line.T
+            CurvedText(
+                x=x,
+                y=y,
+                text=f"l_{self.id}_s_{self.lane_section_id}",
+                va="bottom",
+                axes=axis,
+                fontsize=3,
+            )
 
         if plot_start_and_end:
             axis.scatter(

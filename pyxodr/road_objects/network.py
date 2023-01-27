@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Set
+from typing import List, Optional, Set
 
 import matplotlib.pyplot as plt
 from lxml import etree
@@ -23,17 +23,25 @@ class RoadNetwork:
     resolution : float, optional
         Spatial resolution (in m) with which to create the road object coordinates, by
         default 0.1
+    ignored_lane_types : Set[str], optional
+        A set of lane types that should not be read from the OpenDRIVE file. If
+        unspecified, no types are ignored.
     """
 
     def __init__(
         self,
         xodr_file_path: str,
         resolution: float = 0.1,
+        ignored_lane_types: Optional[Set[str]] = None,
     ):
         self.tree = etree.parse(xodr_file_path)
         self.root = self.tree.getroot()
 
         self.resolution = resolution
+
+        self.ignored_lane_types = (
+            set([]) if ignored_lane_types is None else ignored_lane_types
+        )
 
         self.road_ids_to_object = {}
 
@@ -129,7 +137,11 @@ class RoadNetwork:
             if road_id in self.road_ids_to_object.keys():
                 roads.append(self.road_ids_to_object[road_id])
             else:
-                road = Road(road_xml, resolution=self.resolution)
+                road = Road(
+                    road_xml,
+                    resolution=self.resolution,
+                    ignored_lane_types=self.ignored_lane_types,
+                )
                 self.road_ids_to_object[road.id] = road
                 roads.append(road)
 
@@ -146,6 +158,7 @@ class RoadNetwork:
         plot_start_and_end: bool = False,
         fail_on_key_error: bool = True,
         line_scale_factor: float = 1.0,
+        label_size: Optional[int] = None,
     ) -> plt.Axes:
         """
         Plot a visualisation of this road network on a provided axis object.
@@ -168,6 +181,11 @@ class RoadNetwork:
             road_ids_to_objects dict keys will raise a KeyError, by default True
         line_scale_factor : float, optional
             Scale all lines thicknesses up by this factor, by default 1.0.
+        label_size : int, optional
+            If specified, text of this font size will be displayed along each lane
+            centre line of the form "l_n_s_m" where n is the ID of the lane, m is the id
+            of the lane section, and along each road line of the form "r_n" where n is
+            the ID of the road. By default None, resulting in no labels.
 
         Returns
         -------
@@ -185,6 +203,7 @@ class RoadNetwork:
                 axis,
                 plot_start_and_end=plot_start_and_end,
                 line_scale_factor=line_scale_factor,
+                label_size=label_size,
             )
 
             if plot_lane_centres:
@@ -194,6 +213,7 @@ class RoadNetwork:
                             axis,
                             plot_start_and_end=plot_start_and_end,
                             line_scale_factor=line_scale_factor,
+                            label_size=label_size,
                         )
 
         # Visualise junctions

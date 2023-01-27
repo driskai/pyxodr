@@ -1,40 +1,43 @@
 """Test that the lane lines appear to be drivable in every loaded network."""
 
 import os
-from typing import Dict
+from typing import Optional, Set
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest as pt
 
 from pyxodr.road_objects.network import RoadNetwork
-from tests.example_xodr_files import (  # noqa: F401
-    example_xodr_file_paths,
-    loaded_road_networks,
-)
+from tests.example_xodr_files import example_xodr_file_paths
+
+lane_types_to_be_ignored = [None, set(["sidewalk", "shoulder"]), set(["driving"])]
 
 
 @pt.mark.parametrize("xodr_path", example_xodr_file_paths)
-def test_plot(
-    xodr_path: str, loaded_road_networks: Dict[str, RoadNetwork]  # noqa: F811
-):
+@pt.mark.parametrize("ignored_lane_types", lane_types_to_be_ignored)
+def test_plot(xodr_path: str, ignored_lane_types: Optional[Set[str]]):
     """Test that the road network plots without errors."""
-    rn = loaded_road_networks[xodr_path]
+    rn = RoadNetwork(xodr_path, ignored_lane_types=ignored_lane_types)
     road_network_name = os.path.basename(xodr_path).split(".")[0]
 
     plt.figure(figsize=(20, 20))
     ax = plt.gca()
     rn.plot(ax, plot_start_and_end=True)
-    plt.savefig(os.path.join("tests", "output_plots", f"{road_network_name}.pdf"))
+    plt.savefig(
+        os.path.join(
+            "tests",
+            "output_plots",
+            f"{road_network_name}_ignored_{ignored_lane_types}.pdf",
+        )
+    )
     plt.close()
 
 
 @pt.mark.parametrize("xodr_path", example_xodr_file_paths)
-def test_no_right_angles(
-    xodr_path: str, loaded_road_networks: Dict[str, RoadNetwork]  # noqa: F811
-):
+@pt.mark.parametrize("ignored_lane_types", lane_types_to_be_ignored)
+def test_no_right_angles(xodr_path: str, ignored_lane_types: Optional[Set[str]]):
     """Test that the cosine similarity of successive direction vectors is never < 0."""
-    rn = loaded_road_networks[xodr_path]
+    rn = RoadNetwork(xodr_path, ignored_lane_types=ignored_lane_types)
     road_network_name = os.path.basename(xodr_path).split(".")[0]
     for road in rn.get_roads(include_connecting_roads=True):
         for lane_section in road.lane_sections:
@@ -144,7 +147,8 @@ def test_no_right_angles(
                             os.path.join(
                                 "tests",
                                 "output_plots",
-                                f"{road_network_name}_right_angle.pdf",
+                                f"{road_network_name}_"
+                                + f"ignored_{ignored_lane_types}_right_angle.pdf",
                             )
                         )
                         if source_cosine_similarity < 0.0:

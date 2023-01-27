@@ -5,6 +5,7 @@ repos:
     - id: black
       language_version: python3
       args: ["--line-length", "88"]
+      exclude: pyxodr/utils/curved_text.py
 -   repo: https://github.com/pycqa/isort
     rev: 5.10.1
     hooks:
@@ -26,11 +27,13 @@ repos:
         "--per-file-ignores", "__init__.py:F401",
       ]
       exclude: examples
+      exclude: pyxodr/utils/curved_text.py
 -   repo: https://github.com/pycqa/pydocstyle
     rev: 6.1.1
     hooks:
     - id: pydocstyle
       args: ["--ignore", "D100,D104,D105,D107,D203,D212,D413"]
+      exclude: pyxodr/utils/curved_text.py
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
