@@ -155,6 +155,7 @@ class RoadNetwork:
         plot_start_and_end: bool = False,
         fail_on_key_error: bool = True,
         line_scale_factor: float = 1.0,
+        label_size: Optional[int] = None,
     ) -> plt.Axes:
         """
         Plot a visualisation of this road network on a provided axis object.
@@ -177,6 +178,11 @@ class RoadNetwork:
             road_ids_to_objects dict keys will raise a KeyError, by default True
         line_scale_factor : float, optional
             Scale all lines thicknesses up by this factor, by default 1.0.
+        label_size : int, optional
+            If specified, text of this font size will be displayed along each lane
+            centre line of the form "l_n_s_m" where n is the ID of the lane, m is the id
+            of the lane section, and along each road line of the form "r_n" where n is
+            the ID of the road. By default None, resulting in no labels.
 
         Returns
         -------
@@ -194,6 +200,7 @@ class RoadNetwork:
                 axis,
                 plot_start_and_end=plot_start_and_end,
                 line_scale_factor=line_scale_factor,
+                label_size=label_size,
             )
 
             if plot_lane_centres:
@@ -203,6 +210,7 @@ class RoadNetwork:
                             axis,
                             plot_start_and_end=plot_start_and_end,
                             line_scale_factor=line_scale_factor,
+                            label_size=label_size,
                         )
 
         # Visualise junctions

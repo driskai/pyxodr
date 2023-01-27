@@ -10,6 +10,7 @@ from pyxodr.road_objects.lane import ConnectionPosition, TrafficOrientation
 from pyxodr.road_objects.lane_section import LaneSection
 from pyxodr.utils import cached_property
 from pyxodr.utils.array import interpolate_path
+from pyxodr.utils.curved_text import CurvedText
 
 
 class Road:
@@ -548,6 +549,7 @@ class Road:
         axis: plt.Axes,
         plot_start_and_end: bool = False,
         line_scale_factor: float = 1.0,
+        label_size: Optional[int] = None,
     ) -> plt.Axes:
         """
         Plot a visualisation of this road on a provided axis object.
@@ -561,6 +563,10 @@ class Road:
             with red cross), by default False
         line_scale_factor : float, optional
             Scale all lines thicknesses up by this factor, by default 1.0.
+        label_size : int, optional
+            If specified, text of this font size will be displayed along the road line
+            of the form "r_n" where n is the ID of this road. By default None, resulting
+            in no labels.
 
         Returns
         -------
@@ -571,6 +577,16 @@ class Road:
         global_coords = self.reference_line
         global_coords_len = len(global_coords)
         axis.plot(*global_coords.T, linewidth=0.05 * line_scale_factor)
+        if label_size is not None:
+            x, y = global_coords[int(len(global_coords) // 2) - 1 :].T
+            CurvedText(
+                x=x,
+                y=y,
+                text=f"r_{self.id}",
+                va="bottom",
+                axes=axis,
+                fontsize=3,
+            )
         if plot_start_and_end:
             axis.scatter(
                 [global_coords[0][0]], [global_coords[0][1]], marker="o", c="green", s=4
