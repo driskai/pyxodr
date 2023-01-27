@@ -233,6 +233,8 @@ class LaneSection:
                             predecessor_lane_section.get_lane_from_id(predecessor_id)
                         )
                     except KeyError as e:
+                        if predecessor_id in predecessor_lane_section.ignored_lane_ids:
+                            continue
                         raise KeyError(
                             f"Raised by lane {lane.id}, lane section "
                             + f"{self.lane_section_ordinal} in "
@@ -263,6 +265,8 @@ class LaneSection:
                             successor_id
                         )
                     except KeyError as e:
+                        if successor_id in successor_lane_section.ignored_lane_ids:
+                            continue
                         raise KeyError(
                             f"Raised by lane {lane.id}, lane section "
                             + f"{self.lane_section_ordinal} in "
