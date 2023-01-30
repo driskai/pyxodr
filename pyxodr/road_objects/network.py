@@ -123,14 +123,19 @@ class RoadNetwork:
             road._link_lane_sections()
 
     @lru_cache(maxsize=None)
-    def get_roads(self, include_connecting_roads: bool = True) -> List[Road]:
+    def get_roads(
+        self,
+        include_connecting_roads: bool = True,
+        verbose: bool = False,
+    ) -> List[Road]:
         """Return the Road objects for all roads in this network."""
         if not include_connecting_roads:
             ids_to_avoid = self.connecting_road_ids
         else:
             ids_to_avoid = set()
         roads = []
-        for road_xml in track(self.root.findall("road")):
+        iterator = self.root.findall("road")
+        for road_xml in track(iterator) if verbose else iterator:
             road_id = road_xml.attrib["id"]
             if road_id in ids_to_avoid:
                 continue
