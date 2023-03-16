@@ -89,6 +89,9 @@ class Road:
     def __hash__(self):
         return hash(self.id)
 
+    def __repr__(self):
+        return f"Road_{self.id}"
+
     @cached_property
     def reference_line(self) -> np.ndarray:
         """
