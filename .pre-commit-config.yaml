@@ -7,7 +7,7 @@ repos:
       args: ["--line-length", "88"]
       exclude: pyxodr/utils/curved_text.py
 -   repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
     - id: isort
       name: isort (python)
