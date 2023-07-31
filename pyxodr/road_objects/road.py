@@ -442,7 +442,7 @@ class Road:
 
         partition_indices = list(partition_indices)
         # In order that we can go through pairs of indices
-        partition_indices.append(-1)
+        partition_indices.append(len(self.reference_line))
 
         lane_section_tuples = []
         for i, lane_section_xml in enumerate(
