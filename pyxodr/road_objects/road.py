@@ -89,6 +89,9 @@ class Road:
     def __hash__(self):
         return hash(self.id)
 
+    def __repr__(self):
+        return f"Road_{self.id}"
+
     @cached_property
     def reference_line(self) -> np.ndarray:
         """
@@ -151,7 +154,6 @@ class Road:
                 geometry_coordinates.append(global_coords)
 
             elif geometry.find("poly3") is not None:
-
                 poly3 = geometry.find("poly3")
                 a = float(poly3.attrib["a"])
                 b = float(poly3.attrib["b"])
@@ -439,7 +441,7 @@ class Road:
 
         partition_indices = list(partition_indices)
         # In order that we can go through pairs of indices
-        partition_indices.append(-1)
+        partition_indices.append(len(self.reference_line))
 
         lane_section_tuples = []
         for i, lane_section_xml in enumerate(
