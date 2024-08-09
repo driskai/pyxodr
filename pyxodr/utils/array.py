@@ -46,9 +46,11 @@ def interpolate_path(X: np.ndarray, resolution: float = 0.1) -> np.ndarray:
     _, idxs = np.unique(X, axis=0, return_index=True)
     X = X[sorted(idxs)]
     ss = np.hstack([[0.0], np.linalg.norm(np.diff(X, axis=0), axis=1).cumsum()])
+
+    n_samples = max(int(np.round(ss[-1] / resolution)), 2)
     return interp1d(
         ss,
         X,
         axis=0,
         fill_value="extrapolate",
-    )(np.linspace(0.0, ss[-1], int(np.round(ss[-1] / resolution))))
+    )(np.linspace(0.0, ss[-1], n_samples))
