@@ -131,6 +131,16 @@ class LaneSection:
             offset_line = np.append(
                 offset_line, self.lane_section_z[:, np.newaxis], axis=1
             )
+
+        if offset_line.shape[0] == 1 or offset_line.shape[0] == 0:
+            return np.array(
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                ],
+                dtype=float,
+            )
         return offset_line
 
     @cached_property

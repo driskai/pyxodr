@@ -105,14 +105,22 @@ class RoadNetwork:
             else:
                 succ_dict = None
 
-            if pred_dict is not None and pred_dict["elementType"] == "road":
+            if (
+                pred_dict is not None
+                and pred_dict["elementType"] == "road"
+                and "contactPoint" in pred_dict
+            ):
                 road.predecessor_data = (
                     self.road_ids_to_object[pred_dict["elementId"]],
                     ConnectionPosition.from_contact_point_str(
                         pred_dict["contactPoint"]
                     ),
                 )
-            if succ_dict is not None and succ_dict["elementType"] == "road":
+            if (
+                succ_dict is not None
+                and succ_dict["elementType"] == "road"
+                and "contactPoint" in succ_dict
+            ):
                 road.successor_data = (
                     self.road_ids_to_object[succ_dict["elementId"]],
                     ConnectionPosition.from_contact_point_str(
@@ -142,11 +150,25 @@ class RoadNetwork:
             if road_id in self.road_ids_to_object.keys():
                 roads.append(self.road_ids_to_object[road_id])
             else:
-                road = Road(
-                    road_xml,
-                    resolution=self.resolution,
-                    ignored_lane_types=self.ignored_lane_types,
-                )
+                resolution = self.resolution
+                while True:
+                    road = Road(
+                        road_xml,
+                        resolution=resolution,
+                        ignored_lane_types=self.ignored_lane_types,
+                    )
+                    try:
+                        assert road.lane_offset_line is not None
+                        for lane_section in road.lane_sections:
+                            for lane in lane_section.lanes:
+                                assert lane.lane_reference_line is not None
+                                assert lane.boundary_line is not None
+                        break
+                    except:
+                        resolution /= 2
+                        if resolution < 1e-3:
+                            raise
+
                 self.road_ids_to_object[road.id] = road
                 roads.append(road)
 
@@ -280,7 +302,6 @@ class RoadNetwork:
         IndexError
             If a NoneType lane has neighbours.
         """
-        print("Plotting roads")
         for xodr_road in track(self.get_roads(include_connecting_roads=True)):
             for xodr_lane_section in xodr_road.lane_sections:
                 x_centre, y_centre, z_centre = xodr_lane_section.get_offset_line().T

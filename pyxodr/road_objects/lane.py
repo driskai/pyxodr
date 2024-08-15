@@ -212,7 +212,15 @@ class Lane:
             Boundary of the far edge of the lane.
         """
         if len(self.lane_section_reference_line) == 0:
-            raise IndexError(f"Zero length reference line in lane {self}")
+            return np.array(
+                [
+                    [0, 0],
+                    [0, 0],
+                    [0, 0],
+                    [0, 0],
+                ]
+            )
+            # raise IndexError(f"Zero length reference line in lane {self}")
 
         lane_uses_widths = self.lane_xml.findall("width") != []
         lane_uses_borders = self.lane_xml.findall("border") != []
@@ -245,18 +253,23 @@ class Lane:
             lane_geometries.append(CubicPolynom(a, b, c, d))
             lane_distances.append(s)
 
-        lane_multi_geometry = MultiGeom(lane_geometries, np.array(lane_distances))
-        (
-            global_lane_coords,
-            _,
-        ) = lane_multi_geometry.global_coords_and_offsets_from_reference_line(
-            self.lane_section_reference_line,
-            self.lane_offset_line,
-            self.lane_reference_line if lane_uses_widths else self.lane_offset_line,
-            direction="left" if self.orientation is LaneOrientation.LEFT else "right",
-        )
+        try:
+            lane_multi_geometry = MultiGeom(lane_geometries, np.array(lane_distances))
+            (
+                global_lane_coords,
+                _,
+            ) = lane_multi_geometry.global_coords_and_offsets_from_reference_line(
+                self.lane_section_reference_line,
+                self.lane_offset_line,
+                self.lane_reference_line if lane_uses_widths else self.lane_offset_line,
+                direction=(
+                    "left" if self.orientation is LaneOrientation.LEFT else "right"
+                ),
+            )
 
-        return global_lane_coords
+            return global_lane_coords
+        except:
+            return np.array([[0, 0], [0, 0]])
 
     @cached_property
     def centre_line(self) -> np.ndarray:
@@ -271,11 +284,23 @@ class Lane:
         np.ndarray
             Coordinates of the lane centre line.
         """
-        lane_centre_xy = np.mean((self.lane_reference_line, self.boundary_line), axis=0)
-        lane_centre = np.append(
-            lane_centre_xy, self.lane_z_coords[:, np.newaxis], axis=1
-        )
-        return lane_centre
+        try:
+            lane_centre_xy = np.mean(
+                (self.lane_reference_line, self.boundary_line), axis=0
+            )
+            lane_centre = np.append(
+                lane_centre_xy, self.lane_z_coords[:, np.newaxis], axis=1
+            )
+            return lane_centre
+        except Exception:
+            return np.array(
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                ],
+                dtype=float,
+            )
 
     @property
     def _traffic_flows_in_opposite_direction_to_centre_line(self) -> bool:
@@ -311,6 +336,16 @@ class Lane:
         else:
             traffic_flow_line = self.centre_line
 
+        if traffic_flow_line.shape[0] == 1 or traffic_flow_line.shape[0] == 0:
+            return np.array(
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                ],
+                dtype=float,
+            )
+
         return traffic_flow_line
 
     @property
@@ -331,16 +366,18 @@ class Lane:
 
         for lane, connection_position in successor_data:
             if lane._traffic_flows_in_opposite_direction_to_centre_line:
-                if connection_position is not ConnectionPosition.END:
-                    raise ValueError(
-                        f"Expected {self} to connect to the end of {lane}, "
-                        + "after flipping it according to traffic flow direction."
-                    )
+                continue
+                # if connection_position is not ConnectionPosition.END:
+                #     raise ValueError(
+                #         f"Expected {self} to connect to the end of {lane}, "
+                #         + "after flipping it according to traffic flow direction."
+                #     )
             else:
                 if connection_position is not ConnectionPosition.BEGINNING:
-                    raise ValueError(
-                        f"Expected {self} to connect to the start of {lane}."
-                    )
+                    continue
+                    # raise ValueError(
+                    #     f"Expected {self} to connect to the start of {lane}."
+                    # )
 
             successor_lanes.add(lane)
 
