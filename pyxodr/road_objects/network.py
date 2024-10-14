@@ -45,6 +45,30 @@ class RoadNetwork:
 
         self.road_ids_to_object = {}
 
+    def get_inertial_value(self) -> tuple[float, float, float, float]:
+        """Return the inertial values (north, south, east, west)."""
+        odr_header = self.root.find("header").attrib
+        return (
+            float(odr_header["north"]),
+            float(odr_header["south"]),
+            float(odr_header["east"]),
+            float(odr_header["west"]),
+        )
+
+    def get_geometry_reference(self) -> str:
+        """Return the proj string in the header of the file."""
+        return self.root.find("header").find("geoReference").text
+
+    def get_offset(self) -> tuple[float, float, float, float]:
+        """Return the offset as a tuple (x, y, z, heading)."""
+        header_offset = self.root.find("header").find("offset").attrib
+        return (
+            float(header_offset["x"]),
+            float(header_offset["y"]),
+            float(header_offset["z"]),
+            float(header_offset["hdg"]),
+        )
+
     @lru_cache(maxsize=None)
     def get_junctions(self) -> List[Junction]:
         """Return the Junction objects for all junctions in this road network."""
