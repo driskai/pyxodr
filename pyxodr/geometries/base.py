@@ -1,12 +1,33 @@
-from abc import ABC, abstractmethod
-
+from abc import ABC
+from typing import Optional
 import numpy as np
 
-from pyxodr.utils.array import fix_zero_directions
+from enum import Enum
 
+class GeometryType(Enum):
+    ARC = 0
+    LINE = 1
+    POLYNOMINAL = 2
+    CUBIC_POLYNOM = 3
+    PARAMETRIC_CUBIC_CURVE = 4
+    SPIRAL = 5
 
 class Geometry(ABC):
     """Base class for geometry objects."""
+    def __init__(self, 
+        geometry_type: GeometryType,
+        x_offset: float,
+        y_offset: float,
+        heading_offset: float,
+        length: Optional[float] = None
+    ):
+        self.geometry_type = geometry_type
+        self.x_offset = x_offset
+        self.y_offset = y_offset
+        self.heading_offset = heading_offset
+        self.length = 1.0
+        if length is not None:
+            self.length = length
 
     @staticmethod
     def global_coords_from_offsets(
@@ -47,6 +68,17 @@ class Geometry(ABC):
 
         return global_coords
 
+    def evaluate_geometry(self, resolution: float):
+        num_samples = max(int(self.length / resolution), 2)
+
+        offsets = self(np.linspace(0.0, self.length, num_samples))
+        return Geometry.global_coords_from_offsets(
+                offsets,
+                self.x_offset,
+                self.y_offset,
+                self.heading_offset,
+            )
+        
     @staticmethod
     def compute_offset_vectors(
         local_offsets: np.ndarray,

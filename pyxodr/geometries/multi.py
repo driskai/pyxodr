@@ -133,7 +133,7 @@ class MultiGeom:
         # Repeat the final direction vector to give this the same shape as the centre
         # line
         # We repeat the final vector at the end as the best guess we have for the
-        # direction at the final coordinate is the preceeding direction.
+        # direction at the final coordinate is the preceding direction.
         distance_line_direction_vectors = np.vstack(
             (distance_line_direction_vectors, distance_line_direction_vectors[-1])
         )
