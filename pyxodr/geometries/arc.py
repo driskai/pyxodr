@@ -17,11 +17,14 @@ class Arc(Geometry):
 
     def __init__(
         self,
-        curvature: float,
+        x_offset: float,
+        y_offset: float,
+        heading_offset: float,
         length: float,
+        curvature: float
     ):
+        Geometry.__init__(self, x_offset, y_offset, heading_offset, length)
         self.curvature = curvature
-        self.length = length
 
     def __call__(self, p_array: np.ndarray) -> np.ndarray:
         r"""

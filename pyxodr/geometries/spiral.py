@@ -20,11 +20,14 @@ class Spiral(Geometry):
 
     def __init__(
         self,
-        length: float,
         curvStart: float,
         curvEnd: float,
+        x_offset: float,
+        y_offset: float,
+        heading_offset: float,
+        length: Optional[float] = None
     ):
-        self.length = length
+        Geometry.__init__(self, GeometryType.SPIRAL, x_offset, y_offset, heading_offset, length)
         self.curvStart = curvStart
         self.curvEnd = curvEnd
 

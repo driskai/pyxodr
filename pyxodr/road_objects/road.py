@@ -5,7 +5,7 @@ import numpy as np
 from lxml import etree
 from shapely.geometry import Polygon
 
-from pyxodr.geometries import Arc, CubicPolynom, MultiGeom, ParamCubicPolynom, Spiral
+from pyxodr.geometries import Arc, CubicPolynom, MultiGeom, ParamCubicPolynom, Spiral, Line
 from pyxodr.road_objects.lane import ConnectionPosition, TrafficOrientation
 from pyxodr.road_objects.lane_section import LaneSection
 from pyxodr.utils import cached_property
@@ -107,8 +107,27 @@ class Road:
         NotImplementedError
             If a geometry is encountered which is not implemented.
         """
-        geometry_element_distances = []
         geometry_coordinates = []
+        for geometry in self.reference_line_geometries:
+            geometry_coordinates.append(
+                geometry.evaluate_geometry(self.resolution)
+            )
+        
+        geometry_coordinates = np.array(geometry_coordinates, dtype=object)
+
+        stacked_coordinates = np.vstack(geometry_coordinates).astype(
+            np.float64
+        )
+        stacked_coordinates = interpolate_path(
+            stacked_coordinates, resolution=self.resolution
+        )
+
+        return stacked_coordinates
+
+    @cached_property
+    def reference_line_geometries(self) -> list[Geometry]:
+        geometry_element_distances = []
+        geometries: list[Geometry] = []
         for geometry in self.road_xml.findall("planView/geometry"):
             # Note this is the length of the element's reference line
             length = float(geometry.attrib["length"])
@@ -117,42 +136,23 @@ class Road:
             y_global_offset = float(geometry.attrib["y"])
             heading_global_offset = float(geometry.attrib["hdg"])
 
-            # Minimum of two samples to guarantee existence of direction vectors e.t.c.
-            # TODO: Check if this is still a necessary requirement.
-            num_samples = max(int(length / self.resolution), 2)
-
             geometry_element_distances.append(distance_along_reference_line)
             if geometry.find("line") is not None:
-                # Construct direction vector directly from the heading (in radians)
-                direction_vector = np.array(
-                    [np.cos(heading_global_offset), np.sin(heading_global_offset)]
-                )
-                # Note this direction vector is normalised by construction
-                origin_coordinates_tensor = np.tile(
-                    np.array([x_global_offset, y_global_offset]), (num_samples, 1)
-                )
-                direction_tensor = np.tile(direction_vector, (num_samples, 1))
-                line_coordinates = (
-                    origin_coordinates_tensor
-                    + (direction_tensor.T * np.linspace(0, length, num_samples)).T
-                )
-                geometry_coordinates.append(line_coordinates)
+                geometries.append(Line(
+                    x_offset=x_global_offset,
+                    y_offset=y_global_offset,
+                    heading_offset=heading_global_offset,
+                    length=length))
             elif geometry.find("arc") is not None:
                 arc = geometry.find("arc")
                 curvature = float(arc.attrib["curvature"])
-                a = Arc(
-                    curvature=curvature,
+                geometries.append(Arc(
+                    x_offset=x_global_offset,
+                    y_offset=y_global_offset,
+                    heading_offset=heading_global_offset,
                     length=length,
-                )
-                global_coords = a.global_coords_from_offsets(
-                    a(np.linspace(0.0, 1.0, num_samples)),
-                    x_global_offset,
-                    y_global_offset,
-                    heading_global_offset,
-                )
-
-                geometry_coordinates.append(global_coords)
-
+                    curvature=curvature,
+                ))
             elif geometry.find("poly3") is not None:
                 poly3 = geometry.find("poly3")
                 a = float(poly3.attrib["a"])
@@ -160,16 +160,13 @@ class Road:
                 c = float(poly3.attrib["c"])
                 d = float(poly3.attrib["d"])
 
-                p = CubicPolynom(a, b, c, d)
-                geometry_coordinates.append(
-                    p.global_coords_from_offsets(
-                        p.u_v_from_arc_length(np.linspace(0.0, length, num_samples)),
-                        x_global_offset,
-                        y_global_offset,
-                        heading_global_offset,
-                    )
-                )
-
+                geometries.append(CubicPolynom(
+                    a=a, b=b, c=c, d=d,                       
+                    x_offset=x_global_offset,
+                    y_offset=y_global_offset,
+                    heading_offset=heading_global_offset,
+                    length=length,
+                    ))
             elif geometry.find("paramPoly3") is not None:
                 poly3 = geometry.find("paramPoly3")
                 aU = float(poly3.attrib["aU"])
@@ -185,62 +182,42 @@ class Road:
                 pRange = poly3.attrib.get("pRange", "normalized")
                 upper_p = 1.0 if pRange == "normalized" else length
 
-                p = ParamCubicPolynom(
-                    aU,
-                    bU,
-                    cU,
-                    dU,
-                    aV,
-                    bV,
-                    cV,
-                    dV,
-                )
-                offsets = p(np.linspace(0.0, upper_p, num_samples))
-                geometry_coordinates.append(
-                    p.global_coords_from_offsets(
-                        offsets,
-                        x_global_offset,
-                        y_global_offset,
-                        heading_global_offset,
-                    )
-                )
-
+                geometries.append(ParamCubicPolynom(
+                    aU=aU,
+                    bU=bU,
+                    cU=cU,
+                    dU=dU,
+                    aV=aV,
+                    bV=bV,
+                    cV=cV,
+                    dV=dV,
+                    x_offset=x_global_offset,
+                    y_offset=y_global_offset,
+                    heading_offset=heading_global_offset,
+                    length=upper_p,
+                ))
             elif geometry.find("spiral") is not None:
                 spiral = geometry.find("spiral")
-                sp = Spiral(
-                    length,
-                    float(spiral.attrib["curvStart"]),
-                    float(spiral.attrib["curvEnd"]),
-                )
-
-                offsets = sp(np.linspace(0.0, 1.0, num_samples))
-                geometry_coordinates.append(
-                    sp.global_coords_from_offsets(
-                        offsets,
-                        x_global_offset,
-                        y_global_offset,
-                        heading_global_offset,
-                    )
-                )
+                geometries.append(Spiral(
+                    curvStart=float(spiral.attrib["curvStart"]),
+                    curvEnd=float(spiral.attrib["curvEnd"]),
+                    x_offset=x_global_offset,
+                    y_offset=y_global_offset,
+                    heading_offset=heading_global_offset,
+                    length=length,
+                ))
             else:
                 raise NotImplementedError
 
         geometry_element_distances = np.array(geometry_element_distances)
-        geometry_coordinates = np.array(geometry_coordinates, dtype=object)
 
         sorted_by_distance_indices = geometry_element_distances.argsort()
-        self.coordinates_sorted_by_distance = geometry_coordinates[
-            sorted_by_distance_indices
-        ]
-
-        stacked_coordinates = np.vstack(self.coordinates_sorted_by_distance).astype(
-            np.float64
-        )
-        stacked_coordinates = interpolate_path(
-            stacked_coordinates, resolution=self.resolution
-        )
-
-        return stacked_coordinates
+        # TODO sort the geometries by the distance
+		# self.geometries_sorted_by_distance = geometries[
+        #    sorted_by_distance_indices
+        #]
+        #return self.geometries_sorted_by_distance
+        return geometries
 
     @cached_property
     def lane_offset_line(self) -> np.ndarray:
