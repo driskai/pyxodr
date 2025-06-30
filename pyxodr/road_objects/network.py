@@ -26,6 +26,8 @@ class RoadNetwork:
     ignored_lane_types : Set[str], optional
         A set of lane types that should not be read from the OpenDRIVE file. If
         unspecified, no types are ignored.
+    geo_reference: str, optional
+        Geo reference specification for converting coordinates into lat/lon.
     """
 
     def __init__(
@@ -64,6 +66,14 @@ class RoadNetwork:
         for junction in self.get_junctions():
             _connecting_road_ids |= junction.get_connecting_road_ids()
         return _connecting_road_ids
+
+    @cached_property
+    def geo_reference(self) -> Optional[str]:
+        """Return the geo reference for this road network."""
+        try:
+            return self.root.find("header").find("geoReference").text
+        except AttributeError:
+            return None
 
     def _link_roads(self):
         """
@@ -119,8 +129,10 @@ class RoadNetwork:
                         succ_dict["contactPoint"]
                     ),
                 )
-
-            road._link_lane_sections()
+            try:
+                road._link_lane_sections()
+            except ValueError as e:
+                print(f"WARNING: Could not link all lane sections of {road}. {e}")
 
     @lru_cache(maxsize=None)
     def get_roads(
@@ -142,9 +154,11 @@ class RoadNetwork:
             if road_id in self.road_ids_to_object.keys():
                 roads.append(self.road_ids_to_object[road_id])
             else:
+                length = float(road_xml.attrib["length"])
+                resolution = min(0.5 * length, self.resolution)
                 road = Road(
                     road_xml,
-                    resolution=self.resolution,
+                    resolution=resolution,
                     ignored_lane_types=self.ignored_lane_types,
                 )
                 self.road_ids_to_object[road.id] = road
@@ -212,14 +226,17 @@ class RoadNetwork:
             )
 
             if plot_lane_centres:
-                for lane_section in road.lane_sections:
-                    for lane in lane_section.lanes:
-                        axis = lane.plot(
-                            axis,
-                            plot_start_and_end=plot_start_and_end,
-                            line_scale_factor=line_scale_factor,
-                            label_size=label_size,
-                        )
+                try:
+                    for lane_section in road.lane_sections:
+                        for lane in lane_section.lanes:
+                            axis = lane.plot(
+                                axis,
+                                plot_start_and_end=plot_start_and_end,
+                                line_scale_factor=line_scale_factor,
+                                label_size=label_size,
+                            )
+                except (ValueError, IndexError) as e:
+                    print(f"WARNING: Could not plot lane centers for {road}. {e}")
 
         # Visualise junctions
         if plot_junctions:

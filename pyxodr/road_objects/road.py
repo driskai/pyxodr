@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 import matplotlib.pyplot as plt
@@ -11,6 +12,26 @@ from pyxodr.road_objects.lane_section import LaneSection
 from pyxodr.utils import cached_property
 from pyxodr.utils.array import interpolate_path
 from pyxodr.utils.curved_text import CurvedText
+
+
+@dataclass
+class RoadProperties:
+    """
+    Dataclass for grouping road properties from xodr.
+
+    Parameters
+    ----------
+    name : str
+        Road name.
+    length : float, optional
+        Total length of the road in metres.
+    max_speed : float, optional
+        Speed limit for the road in metres/second.
+    """
+
+    name: str = "Road"
+    length: Optional[float] = None
+    max_speed: Optional[float] = None
 
 
 class Road:
@@ -237,7 +258,7 @@ class Road:
             np.float64
         )
         stacked_coordinates = interpolate_path(
-            stacked_coordinates, resolution=self.resolution
+            stacked_coordinates, resolution=min(self.resolution, 0.5 * length)
         )
 
         return stacked_coordinates
@@ -417,7 +438,10 @@ class Road:
                 )
 
         for lane_section in self.lane_sections:
-            lane_section._link_lanes()
+            try:
+                lane_section._link_lanes()
+            except Exception:
+                print(f"WARNING: Failed to link lanes in {self}.")
 
     def __partition_lane_offset_line_into_lane_sections(
         self,
@@ -549,6 +573,32 @@ class Road:
 
         return _junction_connecting_ids
 
+    @cached_property
+    def road_properties(self) -> RoadProperties:
+        """Return all the existing road properties for this road."""
+        length = float(self["length"])
+        name = self["name"]
+
+        type_element = self.road_xml.find("type")
+        speed_element = type_element.find("speed") if type_element is not None else None
+
+        max_speed, speed_unit = (
+            (float(speed_element.get("max")), speed_element.get("unit", "mps"))
+            if speed_element is not None
+            else (None, None)
+        )
+
+        if speed_unit == "mph":
+            max_speed = max_speed * 0.44704
+        elif speed_unit == "km/h":
+            max_speed = max_speed * 0.277778
+
+        return RoadProperties(
+            name=name if name else RoadProperties.name,
+            length=length,
+            max_speed=max_speed,
+        )
+
     def plot(
         self,
         axis: plt.Axes,
@@ -579,7 +629,11 @@ class Road:
             Axis with the road plotted on it.
         """
         # Plot the road reference line.
-        global_coords = self.reference_line
+        try:
+            global_coords = self.reference_line
+        except ValueError as e:
+            print(f"WARNING: Could not plot {self}. {e}")
+            return axis
         global_coords_len = len(global_coords)
         axis.plot(*global_coords.T, linewidth=0.05 * line_scale_factor)
         if label_size is not None:
@@ -630,5 +684,6 @@ class Road:
             label=f"{self}",
             linewidth=0.2 * line_scale_factor,
         )
+        axis.set_aspect("equal")
 
         return axis
