@@ -332,14 +332,16 @@ class Lane:
         for lane, connection_position in successor_data:
             if lane._traffic_flows_in_opposite_direction_to_centre_line:
                 if connection_position is not ConnectionPosition.END:
-                    raise ValueError(
-                        f"Expected {self} to connect to the end of {lane}, "
-                        + "after flipping it according to traffic flow direction."
+                    print(
+                        f"WARNING: Expected {self} to connect to the end of {lane}, "
+                        + "after flipping it according to traffic flow direction. "
+                        + "Connected to the beginning instead."
                     )
             else:
                 if connection_position is not ConnectionPosition.BEGINNING:
-                    raise ValueError(
-                        f"Expected {self} to connect to the start of {lane}."
+                    print(
+                        f"WARNING: Expected {self} to connect to the start of {lane}. "
+                        + "Connected to the start instead."
                     )
 
             successor_lanes.add(lane)
@@ -436,20 +438,23 @@ class Lane:
             )
 
         # And always plot lane connections
-        for successor_lane in self.traffic_flow_successors:
-            origin_coordinate = lane_traffic_flow_line[-1]
-            # Skip 0 as they may be on top of each other
-            arrow_difference_vector = (
-                successor_lane.traffic_flow_line[1, :2] - origin_coordinate
-            )
-            axis.arrow(
-                *origin_coordinate,
-                *arrow_difference_vector,
-                shape="full",
-                lw=0.5,
-                length_includes_head=True,
-                head_width=0.5,
-                color="red",
-            )
+        try:
+            for successor_lane in self.traffic_flow_successors:
+                origin_coordinate = lane_traffic_flow_line[-1]
+                # Skip 0 as they may be on top of each other
+                arrow_difference_vector = (
+                    successor_lane.traffic_flow_line[1, :2] - origin_coordinate
+                )
+                axis.arrow(
+                    *origin_coordinate,
+                    *arrow_difference_vector,
+                    shape="full",
+                    lw=0.5,
+                    length_includes_head=True,
+                    head_width=0.5,
+                    color="red",
+                )
+        except ValueError as e:
+            print(f"WARNING: Could not plot all lane connections for {self}. {e}")
 
         return axis

@@ -177,3 +177,39 @@ class Junction:
                 f"Road {road_obj.id} doesn't seem to connect to junction {self.id}"
             )
         return closest_point
+
+    def get_lane_junction_lanes(self, lane_id: str, road_id: str):
+        """
+        Returns a list of dictionaries describing all lanes connected to the given lane_id on road_id via this junction.
+
+        Each dictionary contains:
+            - 'road_id': The connecting road's id (from 'connectingRoad' attribute)
+            - 'lane_id': The outgoing lane id (from 'to' attribute in laneLink)
+            - 'lane_section_index': -1 (since lane section is not specified in junction XML)
+        
+        Parameters
+        ----------
+        lane_id : str
+            The incoming lane id on the incoming road.
+        road_id : str
+            The incoming road id.
+
+        Returns
+        -------
+        List[dict]
+            List of connected lanes as described above.
+        """
+        connected_lanes = []
+        for connection_xml in self.junction_xml.findall("connection"):
+            # Only consider connections from the specified incoming road
+            if connection_xml.get("incomingRoad") == road_id:
+                connecting_road_id = connection_xml.get("connectingRoad")
+                lane_section_index = 0 if connection_xml.get("contactPoint") == "start" else -1
+                for lane_link_xml in connection_xml.findall("laneLink"):
+                    if lane_link_xml.get("from") == lane_id:
+                        connected_lanes.append({
+                            "road_id": connecting_road_id,
+                            "lane_id": lane_link_xml.get("to"),
+                            "lane_section_index": lane_section_index
+                        })
+        return connected_lanes

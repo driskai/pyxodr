@@ -41,14 +41,17 @@ def fix_zero_directions(dirs: np.ndarray) -> np.ndarray:
     return dirs
 
 
-def interpolate_path(X: np.ndarray, resolution: float = 0.1) -> np.ndarray:
+def interpolate_path(X: np.ndarray, resolution: float = 0.1, max_samples = 10000, logs_of_max_samples_hit = [], min_samples = 2) -> np.ndarray:
     """Interpolate a path at the given resolution."""
     _, idxs = np.unique(X, axis=0, return_index=True)
     X = X[sorted(idxs)]
     ss = np.hstack([[0.0], np.linalg.norm(np.diff(X, axis=0), axis=1).cumsum()])
+    if int(np.round(ss[-1] / resolution)) > max_samples:
+        print(f'Warning: Path with length {ss[-1]} m and resolution {resolution} has {int(np.round(ss[-1] / resolution))} samples which exceeds max_samples of {max_samples}.')
+        logs_of_max_samples_hit.append([ss[-1], int(np.round(ss[-1] / resolution))])
     return interp1d(
         ss,
         X,
         axis=0,
         fill_value="extrapolate",
-    )(np.linspace(0.0, ss[-1], int(np.round(ss[-1] / resolution))))
+    )(np.linspace(0.0, ss[-1], min(max(int(np.round(ss[-1] / resolution)), min_samples), max_samples)))

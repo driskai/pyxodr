@@ -127,6 +127,8 @@ class MultiGeom:
         distance_line_distances = np.cumsum(
             np.linalg.norm(distance_line_direction_vectors, axis=1)
         )
+        if(len(distance_line) < 2):
+            print(f"WARNING: Distance line has insufficient points ({len(distance_line)}) to compute direction vectors. Distance line Direction vectors: {distance_line_direction_vectors.shape}")
         # Make the distances the same length as the original reference line
         # We add a 0 to the start as "the distance to the 0th element is 0"
         distance_line_distances = np.insert(distance_line_distances, 0, 0)

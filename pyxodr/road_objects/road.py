@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 import matplotlib.pyplot as plt
@@ -11,6 +12,26 @@ from pyxodr.road_objects.lane_section import LaneSection
 from pyxodr.utils import cached_property
 from pyxodr.utils.array import interpolate_path
 from pyxodr.utils.curved_text import CurvedText
+
+
+@dataclass
+class RoadProperties:
+    """
+    Dataclass for grouping road properties from xodr.
+
+    Parameters
+    ----------
+    name : str
+        Road name.
+    length : float, optional
+        Total length of the road in metres.
+    max_speed : float, optional
+        Speed limit for the road in metres/second.
+    """
+
+    name: str = "Road"
+    length: Optional[float] = None
+    max_speed: Optional[float] = None
 
 
 class Road:
@@ -34,6 +55,8 @@ class Road:
         road_xml: etree._Element,
         resolution: float = 0.1,
         ignored_lane_types: Optional[Set[str]] = None,
+        max_samples: int = 10000,
+        logs_of_max_samples_hit: list[int] = [],
     ):
         self.road_xml = road_xml
         self.resolution = resolution
@@ -41,7 +64,8 @@ class Road:
         self.ignored_lane_types = (
             set([]) if ignored_lane_types is None else ignored_lane_types
         )
-
+        self.max_samples = max_samples
+        self.logs_of_max_samples_hit = logs_of_max_samples_hit
         # We'll store both successor and predecessor data as sometimes one of these
         # (maybe just successor?) will point to a junction rather than a road, so we
         # need the other to reconstruct the connectivity
@@ -132,9 +156,11 @@ class Road:
                     np.array([x_global_offset, y_global_offset]), (num_samples, 1)
                 )
                 direction_tensor = np.tile(direction_vector, (num_samples, 1))
+                if num_samples > self.max_samples:
+                    self.logs_of_max_samples_hit.append([length, num_samples])
                 line_coordinates = (
                     origin_coordinates_tensor
-                    + (direction_tensor.T * np.linspace(0, length, num_samples)).T
+                    + (direction_tensor.T * np.linspace(0, length, min(num_samples, self.max_samples))).T
                 )
                 geometry_coordinates.append(line_coordinates)
             elif geometry.find("arc") is not None:
@@ -144,8 +170,10 @@ class Road:
                     curvature=curvature,
                     length=length,
                 )
+                if num_samples > self.max_samples:
+                    self.logs_of_max_samples_hit.append([length, num_samples])
                 global_coords = a.global_coords_from_offsets(
-                    a(np.linspace(0.0, 1.0, num_samples)),
+                    a(np.linspace(0.0, 1.0, min(num_samples, self.max_samples))),
                     x_global_offset,
                     y_global_offset,
                     heading_global_offset,
@@ -161,9 +189,11 @@ class Road:
                 d = float(poly3.attrib["d"])
 
                 p = CubicPolynom(a, b, c, d)
+                if num_samples > self.max_samples:
+                    self.logs_of_max_samples_hit.append([length, num_samples])
                 geometry_coordinates.append(
                     p.global_coords_from_offsets(
-                        p.u_v_from_arc_length(np.linspace(0.0, length, num_samples)),
+                        p.u_v_from_arc_length(np.linspace(0.0, length, min(num_samples, self.max_samples))),
                         x_global_offset,
                         y_global_offset,
                         heading_global_offset,
@@ -195,7 +225,9 @@ class Road:
                     cV,
                     dV,
                 )
-                offsets = p(np.linspace(0.0, upper_p, num_samples))
+                if num_samples > self.max_samples:
+                    self.logs_of_max_samples_hit.append([length, num_samples])
+                offsets = p(np.linspace(0.0, upper_p, min(num_samples, self.max_samples)))
                 geometry_coordinates.append(
                     p.global_coords_from_offsets(
                         offsets,
@@ -212,8 +244,9 @@ class Road:
                     float(spiral.attrib["curvStart"]),
                     float(spiral.attrib["curvEnd"]),
                 )
-
-                offsets = sp(np.linspace(0.0, 1.0, num_samples))
+                if num_samples > self.max_samples:
+                    self.logs_of_max_samples_hit.append([length, num_samples])
+                offsets = sp(np.linspace(0.0, 1.0, min(num_samples, self.max_samples)))
                 geometry_coordinates.append(
                     sp.global_coords_from_offsets(
                         offsets,
@@ -237,7 +270,11 @@ class Road:
             np.float64
         )
         stacked_coordinates = interpolate_path(
-            stacked_coordinates, resolution=self.resolution
+            stacked_coordinates, 
+            resolution=self.resolution, 
+            max_samples=self.max_samples,
+            logs_of_max_samples_hit=self.logs_of_max_samples_hit,
+            min_samples=2       # Ensure at least first and last two points are present
         )
 
         return stacked_coordinates
@@ -417,7 +454,115 @@ class Road:
                 )
 
         for lane_section in self.lane_sections:
-            lane_section._link_lanes()
+            try:
+                lane_section._link_lanes()
+            except Exception:
+                print(f"WARNING: Failed to link lanes in {self}.")
+
+    def get_reference_line_point(self, s: float) -> np.ndarray:
+        """
+        Returns the absolute coordinates of a point on the reference line at distance s.
+        """
+        point_coordinates = None
+        for geometry in self.road_xml.findall("planView/geometry"):
+            # Note this is the length of the element's reference line
+            length = float(geometry.attrib["length"])
+            distance_along_reference_line = float(geometry.attrib["s"])
+            if not(s >= distance_along_reference_line and s <= distance_along_reference_line + length):
+                continue
+            s_relative = s - distance_along_reference_line
+            x_global_offset = float(geometry.attrib["x"])
+            y_global_offset = float(geometry.attrib["y"])
+            heading_global_offset = float(geometry.attrib["hdg"])
+
+            if geometry.find("line") is not None:
+                direction_vector = np.array([np.cos(heading_global_offset), np.sin(heading_global_offset)])
+                origin_coordinates = np.array([x_global_offset, y_global_offset])
+                point_coordinates = origin_coordinates + direction_vector * s_relative
+            elif geometry.find("arc") is not None:
+                arc = geometry.find("arc")
+                curvature = float(arc.attrib["curvature"])
+                # Create an Arc of length s_relative and get the second point
+                a = Arc(
+                    curvature=curvature,
+                    length=s_relative,
+                )
+                coords = a.global_coords_from_offsets(
+                    a(np.linspace(0.0, 1.0, num=2)),
+                    x_global_offset,
+                    y_global_offset,
+                    heading_global_offset,
+                )
+                point_coordinates = coords[1]
+
+            elif geometry.find("poly3") is not None:
+                poly3 = geometry.find("poly3")
+                a = float(poly3.attrib["a"])
+                b = float(poly3.attrib["b"])
+                c = float(poly3.attrib["c"])
+                d = float(poly3.attrib["d"])
+
+                p = CubicPolynom(a, b, c, d)
+                # Create poly of length s_relative and get the second point
+                point_coordinates = p.global_coords_from_offsets(
+                    p.u_v_from_arc_length(np.linspace(0.0, s_relative, num=2)),
+                    x_global_offset,
+                    y_global_offset,
+                    heading_global_offset,
+                )[1]
+
+            elif geometry.find("paramPoly3") is not None:
+                poly3 = geometry.find("paramPoly3")
+                aU = float(poly3.attrib["aU"])
+                bU = float(poly3.attrib["bU"])
+                cU = float(poly3.attrib["cU"])
+                dU = float(poly3.attrib["dU"])
+
+                aV = float(poly3.attrib["aV"])
+                bV = float(poly3.attrib["bV"])
+                cV = float(poly3.attrib["cV"])
+                dV = float(poly3.attrib["dV"])
+
+                pRange = poly3.attrib.get("pRange", "normalized")
+                linspace_stop = s_relative/length if pRange == "normalized" else s_relative
+
+                p = ParamCubicPolynom(
+                    aU,
+                    bU,
+                    cU,
+                    dU,
+                    aV,
+                    bV,
+                    cV,
+                    dV,
+                )
+                offsets = p(np.linspace(0.0, stop=linspace_stop, num=2))
+                point_coordinates = p.global_coords_from_offsets(
+                    offsets,
+                    x_global_offset,
+                    y_global_offset,
+                    heading_global_offset,
+                )[1]
+
+            elif geometry.find("spiral") is not None:
+                spiral = geometry.find("spiral")
+                sp = Spiral(
+                    length,
+                    float(spiral.attrib["curvStart"]),
+                    float(spiral.attrib["curvEnd"]),
+                )
+                linspace_stop = s_relative/length
+                offsets = sp(np.linspace(0.0, stop=linspace_stop, num=2))
+                point_coordinates = sp.global_coords_from_offsets(
+                    offsets,
+                    x_global_offset,
+                    y_global_offset,
+                    heading_global_offset,
+                )[1]
+        if point_coordinates is None:
+            raise ValueError(f"Could not find point at s={s} on road {self.id}")
+        return point_coordinates
+
 
     def __partition_lane_offset_line_into_lane_sections(
         self,
@@ -440,6 +585,9 @@ class Road:
         )
 
         partition_indices = list(partition_indices)
+        if len(partition_indices) != len(self.road_xml.findall("lanes/laneSection")):
+            print(f"WARNING: Partitioning has inconsistent lengths, road {self.id} has {len(partition_indices)} partition indices but {len(self.road_xml.findall('lanes/laneSection'))} lane sections.")
+
         # In order that we can go through pairs of indices
         partition_indices.append(len(self.reference_line))
 
@@ -447,18 +595,27 @@ class Road:
         for i, lane_section_xml in enumerate(
             self.road_xml.findall("lanes/laneSection")
         ):
-            lane_section_tuples.append(
-                (
-                    lane_section_xml,
-                    self.lane_offset_line[
-                        partition_indices[i] : partition_indices[i + 1]
-                    ],
-                    self.z_coordinates[partition_indices[i] : partition_indices[i + 1]],
-                    self.reference_line[
-                        partition_indices[i] : partition_indices[i + 1]
-                    ],
+            start_idx = partition_indices[i]
+            end_idx = partition_indices[i + 1]
+            if start_idx == end_idx:
+                print(f'WARNING: Lane section {i} in road {self.id} has no reference line. Adding start and end points')
+                lane_section_tuples.append(
+                    (
+                        lane_section_xml,
+                        np.array([self.lane_offset_line[start_idx]]),
+                        np.array([self.z_coordinates[start_idx]]),
+                        np.array([self.get_reference_line_point(lane_section_distances[i]), self.get_reference_line_point(lane_section_distances[i+1]) if i+1 < len(lane_section_distances) else self.get_reference_line_point(self.road_properties.length)]),
+                    )
                 )
-            )
+            else:
+                lane_section_tuples.append(
+                    (
+                        lane_section_xml,
+                        self.lane_offset_line[start_idx:end_idx],
+                        self.z_coordinates[start_idx:end_idx],
+                        self.reference_line[start_idx:end_idx],
+                    )
+                )
         return lane_section_tuples
 
     @cached_property
@@ -549,6 +706,32 @@ class Road:
 
         return _junction_connecting_ids
 
+    @cached_property
+    def road_properties(self) -> RoadProperties:
+        """Return all the existing road properties for this road."""
+        length = float(self["length"])
+        name = self["name"]
+
+        type_element = self.road_xml.find("type")
+        speed_element = type_element.find("speed") if type_element is not None else None
+
+        max_speed, speed_unit = (
+            (float(speed_element.get("max")), speed_element.get("unit", "mps"))
+            if speed_element is not None
+            else (None, None)
+        )
+
+        if speed_unit == "mph":
+            max_speed = max_speed * 0.44704
+        elif speed_unit == "km/h":
+            max_speed = max_speed * 0.277778
+
+        return RoadProperties(
+            name=name if name else RoadProperties.name,
+            length=length,
+            max_speed=max_speed,
+        )
+
     def plot(
         self,
         axis: plt.Axes,
@@ -579,7 +762,11 @@ class Road:
             Axis with the road plotted on it.
         """
         # Plot the road reference line.
-        global_coords = self.reference_line
+        try:
+            global_coords = self.reference_line
+        except ValueError as e:
+            print(f"WARNING: Could not plot {self}. {e}")
+            return axis
         global_coords_len = len(global_coords)
         axis.plot(*global_coords.T, linewidth=0.05 * line_scale_factor)
         if label_size is not None:
@@ -630,5 +817,6 @@ class Road:
             label=f"{self}",
             linewidth=0.2 * line_scale_factor,
         )
+        axis.set_aspect("equal")
 
         return axis

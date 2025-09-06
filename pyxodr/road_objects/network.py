@@ -10,6 +10,7 @@ from pyxodr.road_objects.junction import Junction
 from pyxodr.road_objects.lane import ConnectionPosition
 from pyxodr.road_objects.road import Road
 from pyxodr.utils import cached_property
+import numpy as np
 
 
 class RoadNetwork:
@@ -26,6 +27,8 @@ class RoadNetwork:
     ignored_lane_types : Set[str], optional
         A set of lane types that should not be read from the OpenDRIVE file. If
         unspecified, no types are ignored.
+    geo_reference: str, optional
+        Geo reference specification for converting coordinates into lat/lon.
     """
 
     def __init__(
@@ -33,6 +36,7 @@ class RoadNetwork:
         xodr_file_path: str,
         resolution: float = 0.1,
         ignored_lane_types: Optional[Set[str]] = None,
+        max_samples: float = 10000,
     ):
         self.tree = etree.parse(xodr_file_path)
         self.root = self.tree.getroot()
@@ -42,8 +46,34 @@ class RoadNetwork:
         self.ignored_lane_types = (
             set([]) if ignored_lane_types is None else ignored_lane_types
         )
+        self.max_samples = max_samples
+        self.logs_of_max_samples_hit = []
 
         self.road_ids_to_object = {}
+
+    def get_inertial_value(self) -> tuple[float, float, float, float]:
+        """Return the inertial values (north, south, east, west)."""
+        odr_header = self.root.find("header").attrib
+        return (
+            float(odr_header["north"]),
+            float(odr_header["south"]),
+            float(odr_header["east"]),
+            float(odr_header["west"]),
+        )
+
+    def get_geometry_reference(self) -> str:
+        """Return the proj string in the header of the file."""
+        return self.root.find("header").find("geoReference").text
+
+    def get_offset(self) -> tuple[float, float, float, float]:
+        """Return the offset as a tuple (x, y, z, heading)."""
+        header_offset = self.root.find("header").find("offset").attrib
+        return (
+            float(header_offset["x"]),
+            float(header_offset["y"]),
+            float(header_offset["z"]),
+            float(header_offset["hdg"]),
+        )
 
     @lru_cache(maxsize=None)
     def get_junctions(self) -> List[Junction]:
@@ -64,6 +94,14 @@ class RoadNetwork:
         for junction in self.get_junctions():
             _connecting_road_ids |= junction.get_connecting_road_ids()
         return _connecting_road_ids
+
+    @cached_property
+    def geo_reference(self) -> Optional[str]:
+        """Return the geo reference for this road network."""
+        try:
+            return self.root.find("header").find("geoReference").text
+        except AttributeError:
+            return None
 
     def _link_roads(self):
         """
@@ -119,8 +157,10 @@ class RoadNetwork:
                         succ_dict["contactPoint"]
                     ),
                 )
-
-            road._link_lane_sections()
+            try:
+                road._link_lane_sections()
+            except ValueError as e:
+                print(f"WARNING: Could not link all lane sections of {road}. {e}")
 
     @lru_cache(maxsize=None)
     def get_roads(
@@ -142,10 +182,14 @@ class RoadNetwork:
             if road_id in self.road_ids_to_object.keys():
                 roads.append(self.road_ids_to_object[road_id])
             else:
+                length = float(road_xml.attrib["length"])
+                resolution = min(0.5 * length, self.resolution)
                 road = Road(
                     road_xml,
-                    resolution=self.resolution,
+                    resolution=resolution,
                     ignored_lane_types=self.ignored_lane_types,
+                    max_samples=self.max_samples,
+                    logs_of_max_samples_hit=self.logs_of_max_samples_hit
                 )
                 self.road_ids_to_object[road.id] = road
                 roads.append(road)
@@ -212,14 +256,17 @@ class RoadNetwork:
             )
 
             if plot_lane_centres:
-                for lane_section in road.lane_sections:
-                    for lane in lane_section.lanes:
-                        axis = lane.plot(
-                            axis,
-                            plot_start_and_end=plot_start_and_end,
-                            line_scale_factor=line_scale_factor,
-                            label_size=label_size,
-                        )
+                try:
+                    for lane_section in road.lane_sections:
+                        for lane in lane_section.lanes:
+                            axis = lane.plot(
+                                axis,
+                                plot_start_and_end=plot_start_and_end,
+                                line_scale_factor=line_scale_factor,
+                                label_size=label_size,
+                            )
+                except (ValueError, IndexError) as e:
+                    print(f"WARNING: Could not plot lane centers for {road}. {e}")
 
         # Visualise junctions
         if plot_junctions:
@@ -312,3 +359,22 @@ class RoadNetwork:
             [ub - lb for lb, ub in (getattr(axis, f"get_{a}lim")() for a in "xyz")]
         )
         return axis
+
+    def print_logs_max_samples_hit(self):
+        """
+        Get the logs of max samples hit for this road network.
+        Returns
+        -------
+        list[int]
+            List of original number of samples in the linspace for each max samples hit.
+        """
+        print(f'Number of sample Truncations: {len(self.logs_of_max_samples_hit)}')
+        if len(self.logs_of_max_samples_hit) == 0:
+            return
+        logs_array = np.array(self.logs_of_max_samples_hit)
+        resolutions_array = logs_array[:,0] / logs_array[:,1]
+        mean_val = np.mean(resolutions_array)
+        std_val = np.std(resolutions_array)
+        print(f'Resolution stats for truncated samples: Mean = {mean_val}, Std = {std_val}')
+        diff_array = abs(logs_array[:,1] - self.max_samples)
+        print(f'Total Difference from max_samples: {np.sum(diff_array)}')
